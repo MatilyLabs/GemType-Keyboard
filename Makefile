@@ -51,8 +51,10 @@ help: ## List available commands
 	@echo
 	@echo "Overridable variables: ABI=$(ABI) NDK_VERSION=$(NDK_VERSION)"
 
-build: ## Assemble the debug APK
-	cd java && $(GRADLEW) assembleOnlineDebug
+# Debug builds also get an x86_64 split (emulators on Intel hosts); release builds don't.
+# Install it with `make install ABI=x86_64`.
+build: ## Assemble the debug APKs (arm + x86_64 splits)
+	cd java && $(GRADLEW) -Px86=true assembleOnlineDebug
 
 install: build ## Build and install the debug APK on a device
 	@$(WITH_DEVICE) $(ADB) install -r $(DEBUG_APK)
@@ -159,8 +161,9 @@ logcat: ## Stream logcat filtered to the app's process
 
 # Cross-compiles for any ABI; ABI takes a space-separated list or 'all', e.g.:
 #   make build-native ABI="armeabi-v7a arm64-v8a"
-#   make build-native ABI=all
-build-native: ABI_LIST = $(if $(filter all,$(ABI)),armeabi-v7a arm64-v8a,$(ABI))
+#   make build-native ABI=x86_64     (Intel emulator)
+#   make build-native ABI=all        (armeabi-v7a arm64-v8a x86_64)
+build-native: ABI_LIST = $(if $(filter all,$(ABI)),armeabi-v7a arm64-v8a x86_64,$(ABI))
 build-native: ## Rebuild libjni_latinime.so with the NDK (ABI=<list>|all) and copy into jniLibs
 	@test -x "$(NDK_HOME)/ndk-build" || { \
 		echo "NDK not found at $(NDK_HOME)."; \
@@ -172,15 +175,15 @@ build-native: ## Rebuild libjni_latinime.so with the NDK (ABI=<list>|all) and co
 		cp -v native/libs/$$abi/libjni_latinime.so java/jniLibs/$$abi/libjni_latinime.so; \
 	done
 
-# x86/x86_64 are not shipped (not in the splits block of java/build.gradle),
-# so they are only built when triggered manually.
-build-native-x86: ## Build the x86/x86_64 native libs (not shipped; manual only)
+# x86/x86_64 are not shipped in release builds (the x86_64 split is only enabled for
+# `make build` via -Px86=true, see java/build.gradle), so they are built on demand.
+build-native-x86: ## Build the x86/x86_64 native libs (emulator; not shipped in release)
 	$(MAKE) build-native ABI="x86 x86_64"
 
 # Builds the govarnam engine libs (libgovarnam.so + libgovarnam_jni.so) for the shipped
 # ABIs and copies them into jniLibs. Prerequisites: Go toolchain, the govarnam Go source
 # (GOVARNAM_SRC_DIR), govarnam-java (GOVARNAM_JAVA_DIR) and NDK $(GOVARNAM_NDK_VERSION).
-varnam-native: VARNAM_ABI_LIST = armeabi-v7a arm64-v8a
+varnam-native: VARNAM_ABI_LIST = $(if $(filter all,$(ABI)),armeabi-v7a arm64-v8a x86_64,$(if $(filter x86_64,$(ABI)),x86_64,armeabi-v7a arm64-v8a))
 varnam-native: ## Build govarnam .so from the govarnam/ submodule and copy into jniLibs
 	@command -v go >/dev/null || { echo "Go toolchain not found (needed to build govarnam)."; exit 1; }
 	@test -d "$(GOVARNAM_SRC_DIR)" || { \
@@ -197,6 +200,7 @@ varnam-native: ## Build govarnam .so from the govarnam/ submodule and copy into 
 		case $$abi in \
 			arm64-v8a)   goarch=arm64; goarm=; cc="$$tc/aarch64-linux-android$(GOVARNAM_API)-clang";; \
 			armeabi-v7a) goarch=arm; goarm=7; cc="$$tc/armv7a-linux-androideabi$(GOVARNAM_API)-clang";; \
+			x86_64)      goarch=amd64; goarm=; cc="$$tc/x86_64-linux-android$(GOVARNAM_API)-clang";; \
 			*) echo "unsupported abi $$abi"; exit 1;; \
 		esac; \
 		out="$(CURDIR)/$(GOVARNAM_BUILD_DIR)/$$abi"; mkdir -p "$$out"; \
