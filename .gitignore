@@ -46,3 +46,6 @@ native/host-harness/futo/
 
 # macOS
 .DS_Store
+
+# Kotlin compiler session cache
+java/.kotlin/
