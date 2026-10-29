@@ -62,7 +62,7 @@
     <string name="about_source">Source code</string>
     <string name="about_contributors">Contributors</string>
     <string name="about_website_url" translatable="false">https://gemtype.matily.org</string>
-    <string name="about_source_url" translatable="false">https://github.com/riponcm/GemType-Keyboard</string>
+    <string name="about_source_url" translatable="false">https://github.com/MatilyLabs/GemType-Keyboard</string>
     <string name="about_contributors_url" translatable="false">https://github.com/smc/Indic-Keyboard/graphs/contributors?all=1</string>
 
     <!-- Accessibility description for the suggestion strip's sticky menu key that opens the
