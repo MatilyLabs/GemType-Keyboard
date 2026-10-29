@@ -105,6 +105,15 @@ class RomanizedTest {
         assertEquals(emptyList<String>(), detect("ami go home now", "bn")) // only one list word
     }
 
+    @Test fun oneListWordIsEnoughWhenTheTextIsMostlyNotEnglish() {
+        // A real chat message: only "ami" and "ki" are list words, the rest are spellings no list has.
+        assertEquals("bn", detect("Ami ki korile paibo tmk he goru", "bn", "ur", "en").first())
+        assertEquals(listOf("bn"), detect("ami xyzzy qwrt", "bn")) // 1 list word, 3 of 3 foreign
+        assertEquals(emptyList<String>(), detect("ami xyzzy", "bn")) // fewer than 3 words
+        assertEquals(emptyList<String>(), detect("I will come tomorrow ami", "bn")) // mostly English
+        assertEquals(emptyList<String>(), detect("ami xyzzy qwrt", "bn", isEnglish = null)) // needs a dictionary
+    }
+
     @Test fun listWordsThatAreValidEnglishDoNotCount() {
         val bothEnglish: (String) -> Boolean = { it in setOf("ami", "kal") }
         assertEquals(emptyList<String>(), detect("ami kal ashbo", "bn", isEnglish = bothEnglish))

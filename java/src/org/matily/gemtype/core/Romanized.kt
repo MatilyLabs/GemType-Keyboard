@@ -58,8 +58,11 @@ object Romanized {
      *
      * A language with a list ([lists] returns it) matches when at least 2 of the words, and at least
      * 40% of all words, are in the list and are not valid English ([isEnglish]; null means "unknown",
-     * so no word is dropped). A language without a list matches only when it is the user's only one:
-     * at least 3 words, 60% of them Latin-letter words that are not valid English (needs [isEnglish]).
+     * so no word is dropped). It also matches on a single listed word when the text is mostly not
+     * English (at least 3 words, 60% of them Latin-letter words that are not valid English): chat
+     * spellings like "tmk" or "korile" are endless, so one known word anchors the language. A
+     * language without a list matches only when it is the user's only one, on that same "mostly not
+     * English" test. Both "mostly not English" rules need [isEnglish].
      */
     fun detect(
         text: String,
@@ -73,16 +76,17 @@ object Romanized {
         fun notEnglish(word: String) = isEnglish == null || !english.getOrPut(word) { isEnglish(word) }
         val matches = ArrayList<Match>()
         val distinct = languages.distinct()
+        val foreign = if (isEnglish == null) 0 else words.count { w -> w.all { it.code < 128 } && notEnglish(w) }
+        val mostlyForeign = isEnglish != null && words.size >= FALLBACK_MIN_WORDS &&
+            foreign * 100 >= FALLBACK_SHARE_PERCENT * words.size
         for (language in distinct) {
             val list = lists(language)
             if (list != null) {
                 val score = words.count { it in list && notEnglish(it) }
-                if (score >= MIN_LIST_WORDS && score * 100 >= LIST_SHARE_PERCENT * words.size) {
-                    matches += Match(language, score)
-                }
-            } else if (distinct.size == 1 && isEnglish != null && words.size >= FALLBACK_MIN_WORDS) {
-                val score = words.count { w -> w.all { it.code < 128 } && notEnglish(w) }
-                if (score * 100 >= FALLBACK_SHARE_PERCENT * words.size) matches += Match(language, score)
+                val listed = score >= MIN_LIST_WORDS && score * 100 >= LIST_SHARE_PERCENT * words.size
+                if (listed || (score >= 1 && mostlyForeign)) matches += Match(language, score)
+            } else if (distinct.size == 1 && mostlyForeign) {
+                matches += Match(language, foreign)
             }
         }
         return matches.sortedByDescending { it.score }
