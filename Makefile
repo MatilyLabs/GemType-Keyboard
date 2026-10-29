@@ -53,8 +53,10 @@ help: ## List available commands
 
 # Debug builds also get an x86_64 split (emulators on Intel hosts); release builds don't.
 # Install it with `make install ABI=x86_64`.
+# Extra Gradle arguments, e.g. GRADLE_ARGS=-Pgemtype.apiBase=http://localhost:8765/v1beta/models
+# builds a GemType that talks to tools/gemtype/mock_gemini.py instead of Google.
 build: ## Assemble the debug APKs (arm + x86_64 splits)
-	cd java && $(GRADLEW) -Px86=true assembleOnlineDebug
+	cd java && $(GRADLEW) -Px86=true $(GRADLE_ARGS) assembleOnlineDebug
 
 install: build ## Build and install the debug APK on a device
 	@$(WITH_DEVICE) $(ADB) install -r $(DEBUG_APK)

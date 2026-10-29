@@ -15,7 +15,12 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         coreApp="true">
+
+    <!-- androidx.security-crypto (GemType's encrypted key store) needs API 23; GemType is switched
+         off below that (GemType.isEnabled), the rest of the keyboard still supports API 21. -->
+    <uses-sdk tools:overrideLibrary="androidx.security.crypto" />
 
     <!-- Downloading Varnam language data via DownloadManager (the latter lets the small
          index.json fetch run without a notification). -->
@@ -59,6 +64,8 @@
             android:icon="@mipmap/ic_launcher"
             android:roundIcon="@mipmap/ic_launcher_round"
             android:allowBackup="true"
+            android:fullBackupContent="@xml/gemtype_backup_rules"
+            android:dataExtractionRules="@xml/gemtype_data_extraction_rules"
             android:defaultToDeviceProtectedStorage="true"
             android:directBootAware="true">
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Matily. SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Android 11 and older: keep the GemType API key out of backups. It is encrypted with a
+     device-bound Keystore key and could not be decrypted elsewhere anyway. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="gemtype_secure_prefs.xml" />
+    <exclude domain="device_sharedpref" path="gemtype_secure_prefs.xml" />
+    <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml" />
+    <exclude domain="device_sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml" />
+</full-backup-content>

@@ -34,7 +34,14 @@ dependencies {
     implementation 'androidx.autofill:autofill:1.1.0'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.preference:preference:1.2.1'
+    // GemType (org.matily.gemtype): request coroutines and the encrypted API-key store.
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    implementation 'androidx.security:security-crypto:1.1.0'
     implementation project(':ime')
+
+    testImplementation 'junit:junit:4.13.2'
+    // The android.jar org.json is a stub that throws in JVM unit tests.
+    testImplementation 'org.json:json:20240303'
 }
 
 // Used in calculating version code for each APK in splits
@@ -54,6 +61,11 @@ android {
         targetSdk = 37
         versionCode = 220
         versionName = "4.0.1"
+
+        // GemType talks to Google's Gemini API. Debug builds can point at a local mock:
+        //   ./gradlew assembleOnlineDebug -Pgemtype.apiBase=http://localhost:8765/v1beta/models
+        buildConfigField "String", "GEMTYPE_API_BASE",
+                '"https://generativelanguage.googleapis.com/v1beta/models"'
     }
 
     buildFeatures {
@@ -67,11 +79,14 @@ android {
         online {
             dimension = "distribution"
             buildConfigField "boolean", "BUNDLED_LANGUAGE_PACKS", "false"
+            buildConfigField "boolean", "GEMTYPE_ENABLED", "true"
         }
         offline {
             dimension = "distribution"
             versionNameSuffix = "-offline"
             buildConfigField "boolean", "BUNDLED_LANGUAGE_PACKS", "true"
+            // No INTERNET permission in this flavor, so no GemType.
+            buildConfigField "boolean", "GEMTYPE_ENABLED", "false"
         }
     }
 
@@ -103,6 +118,16 @@ android {
             manifest.srcFile 'offline/AndroidManifest.xml'
             assets.srcDirs = ['offline/assets']
         }
+        // Debug-only network security config: cleartext to localhost / 10.0.2.2 for the GemType mock.
+        debug {
+            manifest.srcFile 'debug/AndroidManifest.xml'
+            res.srcDirs = ['debug/res']
+        }
+        // 'src' is a main source root, so keep JVM unit tests out of src/test.
+        test {
+            java.srcDirs = ['test']
+            kotlin.srcDirs = ['test']
+        }
         androidTest.setRoot('tests')
     }
 
@@ -116,6 +141,12 @@ android {
         }
     }
     buildTypes {
+        debug {
+            def gemtypeApiBase = project.findProperty('gemtype.apiBase')
+            if (gemtypeApiBase != null) {
+                buildConfigField "String", "GEMTYPE_API_BASE", "\"${gemtypeApiBase}\""
+            }
+        }
         release {
             minifyEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.txt'

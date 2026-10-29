@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Matily. SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Android 12+: keep the GemType API key out of cloud backups and device transfers. Everything
+     else is backed up as before. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="gemtype_secure_prefs.xml" />
+        <exclude domain="device_sharedpref" path="gemtype_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml" />
+        <exclude domain="device_sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="gemtype_secure_prefs.xml" />
+        <exclude domain="device_sharedpref" path="gemtype_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml" />
+        <exclude domain="device_sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml" />
+    </device-transfer>
+</data-extraction-rules>
