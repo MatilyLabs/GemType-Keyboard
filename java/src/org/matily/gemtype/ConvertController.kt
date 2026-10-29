@@ -112,7 +112,7 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         if (!GemType.isEnabled || undo != null || message != null || busy >= 0 || host.isPasswordField() ||
             !host.isLatinKeyboard() || !ConvertPrefs.showPill(context)
         ) return emptyList()
-        val languages = RomanizedLists.enabledNonLatinLanguages(context)
+        val languages = ConvertPrefs.convertTo(context)
         if (languages.isEmpty()) return emptyList()
         val lists = RomanizedLists.peek()
         if (lists == null) {

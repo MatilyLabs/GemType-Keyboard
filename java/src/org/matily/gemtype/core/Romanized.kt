@@ -29,6 +29,8 @@ object Romanized {
 
     const val TAIL_CHARS = 300
     const val MAX_PILLS = 2
+    /** Most languages the user can choose to convert to. */
+    const val MAX_TARGETS = 3
     private const val MIN_LIST_WORDS = 2
     private const val LIST_SHARE_PERCENT = 40
     private const val FALLBACK_MIN_WORDS = 3
@@ -62,7 +64,8 @@ object Romanized {
      * English (at least 3 words, 60% of them Latin-letter words that are not valid English): chat
      * spellings like "tmk" or "korile" are endless, so one known word anchors the language. A
      * language without a list matches only when it is the user's only one, on that same "mostly not
-     * English" test. Both "mostly not English" rules need [isEnglish].
+     * English" test. Both "mostly not English" rules need [isEnglish]. A match scoring half the best
+     * one or less is dropped; equal scores (Hindi and Urdu) both stay.
      */
     fun detect(
         text: String,
@@ -89,8 +92,20 @@ object Romanized {
                 matches += Match(language, foreign)
             }
         }
-        return matches.sortedByDescending { it.score }
+        // A language that matched only through a few words shared with a much better match is not offered ("kal", "na" in Bangla text).
+        val best = matches.maxOfOrNull { it.score } ?: 0
+        return matches.filter { it.score * 2 > best }.sortedByDescending { it.score }
     }
+
+    /** The saved "Convert to" value as stored by [formatTargets]; null when the user never chose (an empty string is a choice: none). */
+    fun parseTargets(saved: String?): List<String>? =
+        saved?.split(',')?.map { it.trim() }?.filter { it in NON_LATIN }?.distinct()?.take(MAX_TARGETS)
+
+    fun formatTargets(languages: Collection<String>): String = languages.distinct().take(MAX_TARGETS).joinToString(",")
+
+    /** The languages to convert to: what the user saved, else the first [MAX_TARGETS] of the [enabled] non-Latin keyboard languages. */
+    fun targets(saved: String?, enabled: List<String>): List<String> =
+        parseTargets(saved) ?: enabled.filter { it in NON_LATIN }.distinct().take(MAX_TARGETS)
 
     /** The pills to show: the language picked last time first (if it matched), then by score; at most [MAX_PILLS]. */
     fun order(matches: List<Match>, lastPicked: String?): List<Match> =

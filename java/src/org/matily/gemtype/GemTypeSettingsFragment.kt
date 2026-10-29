@@ -12,6 +12,8 @@ import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.view.View
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -19,10 +21,14 @@ import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import com.android.inputmethod.latin.R
+import com.android.inputmethod.latin.utils.KeyboardLanguages
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.matily.gemtype.core.GemtypeConfig
+import org.matily.gemtype.core.Romanized
+import org.smc.inputmethod.indic.setup.LanguageOrder
 import org.smc.inputmethod.indic.settings.SubScreenFragment
 import java.util.Locale
 
@@ -39,6 +45,8 @@ class GemTypeSettingsFragment : SubScreenFragment() {
     private lateinit var customModel: EditTextPreference
     private lateinit var qualityHint: Preference
     private lateinit var language: ListPreference
+    private lateinit var convertTo: Preference
+    private var convertToDialog: AlertDialog? = null
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         super.onCreatePreferences(savedInstanceState, rootKey)
@@ -118,6 +126,11 @@ class GemTypeSettingsFragment : SubScreenFragment() {
             saveAsync { GemTypeSettings.setLanguage(ctx, value as String) }
             true
         }
+        convertTo = requirePreference("gemtype_convert_to")
+        convertTo.setOnPreferenceClickListener {
+            showConvertToDialog()
+            true
+        }
         showModelChoice(GemTypeSettings.DEFAULT_MODEL, "")
         language.value = GemTypeSettings.AUTO_LANGUAGE
         showKey("")
@@ -140,6 +153,14 @@ class GemTypeSettingsFragment : SubScreenFragment() {
     override fun onResume() {
         super.onResume()
         setActionBarTitle(getString(R.string.gemtype_settings_title))
+        // The default follows the enabled keyboard languages, which may have changed since.
+        showConvertTo()
+    }
+
+    override fun onDestroyView() {
+        convertToDialog?.dismiss()
+        convertToDialog = null
+        super.onDestroyView()
     }
 
     // ---- showing values ------------------------------------------------------------------
@@ -149,6 +170,11 @@ class GemTypeSettingsFragment : SubScreenFragment() {
         val known = GemTypeSettings.MODELS.any { it.first == config.model }
         if (known) showModelChoice(config.model, "") else showModelChoice(CUSTOM, config.model)
         language.value = config.language.takeIf { it in GemTypeSettings.LANGUAGES } ?: GemTypeSettings.AUTO_LANGUAGE
+    }
+
+    private fun showConvertTo() {
+        convertTo.summary = ConvertPrefs.convertTo(requireContext()).joinToString { Romanized.nativeName(it) }
+            .ifEmpty { getString(R.string.gemtype_convert_to_none) }
     }
 
     private fun showKey(key: String) {
@@ -182,6 +208,35 @@ class GemTypeSettingsFragment : SubScreenFragment() {
         SpannableString(text).apply {
             setSpan(ForegroundColorSpan(color), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
+
+    /** Every non-Latin-script language the keyboard types, in the order of the language lists: Bangla, Hindi, then A to Z. */
+    private fun showConvertToDialog() {
+        val ctx = requireContext()
+        val languages = KeyboardLanguages.getLanguages(ctx).sortedWith(LanguageOrder.comparator)
+            .filter { it.mLocale.substringBefore('_') in Romanized.NON_LATIN }
+        val codes = languages.map { it.mLocale.substringBefore('_') }
+        val current = ConvertPrefs.convertTo(ctx)
+        val checked = BooleanArray(codes.size) { codes[it] in current }
+        // The isolates keep a right-to-left name (Arabic, Urdu) from reordering the row.
+        val names = languages.map { "\u2068${it.mAutonym}\u2069  ·  ${it.mEnglishName}" }.toTypedArray()
+        convertToDialog?.dismiss()
+        convertToDialog = MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.gemtype_convert_to)
+            // [checked] is already updated when the listener runs; a fourth language is taken back at once.
+            .setMultiChoiceItems(names, checked) { dialog, which, isChecked ->
+                if (isChecked && checked.count { it } > Romanized.MAX_TARGETS) {
+                    checked[which] = false
+                    (dialog as AlertDialog).listView.setItemChecked(which, false)
+                    Toast.makeText(ctx, getString(R.string.gemtype_convert_to_max, Romanized.MAX_TARGETS), Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                ConvertPrefs.setConvertTo(ctx, codes.filterIndexed { i, _ -> checked[i] })
+                showConvertTo()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
 
     // ---- saving --------------------------------------------------------------------------
 

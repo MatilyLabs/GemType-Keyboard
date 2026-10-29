@@ -66,5 +66,10 @@
             android:summary="@string/gemtype_show_convert_pill_summary"
             android:defaultValue="true"
             android:persistent="true" />
+        <Preference
+            android:key="gemtype_convert_to"
+            android:title="@string/gemtype_convert_to"
+            android:dependency="gemtype_show_convert_pill"
+            android:persistent="false" />
     </PreferenceCategory>
 </PreferenceScreen>

@@ -286,7 +286,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     /** The user's languages that [source] seems to be written in with English letters, best first. */
     private fun detectLanguages(): List<Romanized.Match> {
         val lists = RomanizedLists.peek() ?: return emptyList()
-        val languages = RomanizedLists.enabledNonLatinLanguages(context)
+        val languages = ConvertPrefs.convertTo(context)
         val found = Romanized.detect(source.take(DETECT_CHARS), languages, lists::get, host.englishCheck())
         return Romanized.order(found, ConvertPrefs.lastLanguage(context))
     }

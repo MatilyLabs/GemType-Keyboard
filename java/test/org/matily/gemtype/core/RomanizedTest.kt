@@ -176,4 +176,44 @@ class RomanizedTest {
         assertEquals("اردو", Romanized.nativeName("ur"))
         assertEquals("தமிழ்", Romanized.nativeName("ta"))
     }
+
+    @Test fun neverChosenFallsBackToTheEnabledKeyboardLanguagesCappedAtThree() {
+        assertEquals(listOf("bn", "ur"), Romanized.targets(null, listOf("bn", "ur")))
+        assertEquals(listOf("bn", "hi", "ta"), Romanized.targets(null, listOf("bn", "hi", "ta", "ur")))
+        assertEquals(emptyList<String>(), Romanized.targets(null, emptyList()))
+        assertEquals(listOf("bn"), Romanized.targets(null, listOf("bn", "en", "bn"))) // Latin and repeats dropped
+    }
+
+    @Test fun aSavedChoiceWinsEvenWhenEmpty() {
+        assertEquals(listOf("bn", "hi", "ur"), Romanized.targets("bn,hi,ur", listOf("ta")))
+        assertEquals(listOf("ur"), Romanized.targets("ur", listOf("bn", "hi")))
+        assertEquals(emptyList<String>(), Romanized.targets("", listOf("bn", "hi"))) // "None"
+    }
+
+    @Test fun savedChoiceIsCappedAtThreeAndKeepsOnlyKnownLanguages() {
+        assertEquals(listOf("bn", "hi", "ur"), Romanized.parseTargets("bn,hi,ur,ta,te"))
+        assertEquals(listOf("bn", "hi"), Romanized.parseTargets("bn, xx,en,hi,bn"))
+        assertEquals(null, Romanized.parseTargets(null))
+        val saved = Romanized.formatTargets(listOf("ta", "te", "bn", "hi"))
+        assertEquals("ta,te,bn", saved)
+        assertEquals(listOf("ta", "te", "bn"), Romanized.parseTargets(saved))
+        assertEquals("", Romanized.formatTargets(emptyList()))
+    }
+
+    @Test fun detectionOffersOnlyTheChosenLanguages() {
+        val hindiOrUrdu = "humari iska koi"
+        val chosen = { saved: String? -> Romanized.targets(saved, listOf("bn", "ur")) }
+        val found = { saved: String?, text: String ->
+            Romanized.order(Romanized.detect(text, chosen(saved), lists::get, english), null).map { it.language }
+        }
+        // Default (enabled Bangla + Urdu): only Urdu can be offered for Hindi/Urdu text.
+        assertEquals(listOf("ur"), found(null, hindiOrUrdu))
+        // Chosen Bangla, Hindi, Urdu: Hindi and Urdu share romanization, so both show; Bangla text shows only Bangla.
+        assertEquals(listOf("hi", "ur"), found("bn,hi,ur", hindiOrUrdu))
+        assertEquals(listOf("bn"), found("bn,hi,ur", "ami kal ashbo na"))
+        // Not chosen means never offered; Assamese appears next to Bangla only when it is chosen too.
+        assertEquals(emptyList<String>(), found("bn", hindiOrUrdu))
+        assertEquals(emptyList<String>(), found("", "ami kal ashbo na"))
+        assertEquals(listOf("bn", "as"), found("bn,as", "ami kal ashbo na tumi ki koribo").sorted().reversed())
+    }
 }

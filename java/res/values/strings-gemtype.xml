@@ -68,6 +68,10 @@
     <string name="gemtype_show_convert_pill">Show conversion pill</string>
     <string name="gemtype_show_convert_pill_summary">Offer to turn text typed in English letters into your language</string>
 
+    <string name="gemtype_convert_to">Convert to</string>
+    <string name="gemtype_convert_to_none">None</string>
+    <string name="gemtype_convert_to_max">Choose up to %1$d languages</string>
+
     <!-- First-run setup -->
     <string name="gemtype_setup_back">Back</string>
     <string name="gemtype_setup_continue">Continue</string>
