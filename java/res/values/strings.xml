@@ -61,12 +61,6 @@
     <string name="about_website">Website</string>
     <string name="about_source">Source code</string>
     <string name="about_contributors">Contributors</string>
-    <!-- Keep the <a href> markup around the two names; translate only the words. -->
-    <string name="about_gemtype_intro">GemType — made by Matily\nBased on <a href="https://gitlab.com/indicproject/indic-keyboard">Indic Keyboard</a> by the Indic Project (Apache-2.0).\nGemType is free software under the GNU AGPL-3.0.</string>
-    <string name="about_made_by">Written by <a href="https://j15h.nu/">Jishnu Mohan</a> with patches from many contributors. Logo by <a href="https://hiran.in/">Hiran Venugopalan</a>.</string>
-    <string name="about_built_with">Predictive transliteration by Varnam, layouts from jquery.ime, words from Wikipedia and Olam/Alar.</string>
-    <string name="about_footer">\u00A9 2026 Jishnu Mohan \u00B7 Apache License 2.0</string>
-    <string name="about_open_source_licenses">Open-source licenses</string>
     <string name="about_website_url" translatable="false">https://gemtype.matily.org</string>
     <string name="about_source_url" translatable="false">https://github.com/riponcm/GemType-Keyboard</string>
     <string name="about_contributors_url" translatable="false">https://github.com/smc/Indic-Keyboard/graphs/contributors?all=1</string>

@@ -20,11 +20,12 @@ import android.os.Bundle
 
 import com.android.inputmethod.latin.R
 
-/** Lists the open-source projects the keyboard uses; each row opens its full license text. */
+/** Credits and the open-source projects the keyboard uses; each row opens its full license text. */
 class LicensesFragment : SubScreenFragment() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         super.onCreatePreferences(savedInstanceState, rootKey)
         addPreferencesFromResource(R.xml.prefs_screen_licenses)
+        openUrlOnClick("about_contributors", R.string.about_contributors_url)
     }
 
     override fun onResume() {

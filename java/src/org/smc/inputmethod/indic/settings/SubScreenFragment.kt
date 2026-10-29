@@ -17,14 +17,18 @@
 package org.smc.inputmethod.indic.settings
 
 import android.app.backup.BackupManager
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -54,6 +58,18 @@ abstract class SubScreenFragment : PreferenceFragmentCompat(), OnSharedPreferenc
 
     protected fun setActionBarTitle(title: CharSequence?) {
         (activity as? AppCompatActivity)?.supportActionBar?.title = title
+    }
+
+    /** Opens the URL in string resource [urlRes] when the preference [key] is tapped. */
+    protected fun openUrlOnClick(key: String, @StringRes urlRes: Int) {
+        findPreference<Preference>(key)?.setOnPreferenceClickListener {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(urlRes))))
+            } catch (e: ActivityNotFoundException) {
+                // No app can open this link (e.g. mailto: without a mail app); nothing to do.
+            }
+            true
+        }
     }
 
     /** Enable the vibration/sound sub-settings only while their master toggle is on. */

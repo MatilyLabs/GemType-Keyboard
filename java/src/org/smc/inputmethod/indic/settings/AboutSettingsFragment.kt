@@ -16,23 +16,21 @@
 
 package org.smc.inputmethod.indic.settings
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 
-import androidx.annotation.StringRes
 import androidx.preference.Preference
 
 import com.android.inputmethod.latin.R
 
-/** "About" sub screen: app header, website/source links and the open-source licenses. */
+/** "About" sub screen: app header, links and the open-source licenses and credits. */
 class AboutSettingsFragment : SubScreenFragment() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         super.onCreatePreferences(savedInstanceState, rootKey)
         addPreferencesFromResource(R.xml.prefs_screen_about)
         openUrlOnClick("about_website", R.string.about_website_url)
         openUrlOnClick("about_source", R.string.about_source_url)
-        openUrlOnClick("about_contributors", R.string.about_contributors_url)
+        openUrlOnClick("about_privacy", R.string.about_privacy_url)
+        openUrlOnClick("about_contact", R.string.about_contact_url)
 
         requirePreference<Preference>("about_made_by").title =
             getText(R.string.about_made_by)
@@ -41,12 +39,5 @@ class AboutSettingsFragment : SubScreenFragment() {
     override fun onResume() {
         super.onResume()
         setActionBarTitle(getString(R.string.settings_screen_about))
-    }
-
-    private fun openUrlOnClick(key: String, @StringRes urlRes: Int) {
-        findPreference<Preference>(key)?.setOnPreferenceClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(urlRes))))
-            true
-        }
     }
 }

@@ -43,4 +43,15 @@
     <string name="gemtype_quality_hint">3.8 Flash is often busy on free-tier keys and has a much lower free daily limit. If fixes are slow or fail, switch back to Flash-Lite.</string>
     <string name="gemtype_language">Writing language</string>
     <string name="gemtype_language_auto">Auto-detect (keep the text\'s language)</string>
+
+    <!-- About screen -->
+    <string name="about_made_by">Made by Matily\nDeveloped by Ripon C. Malo</string>
+    <string name="about_privacy">Privacy policy</string>
+    <string name="about_privacy_url" translatable="false">https://github.com/riponcm/GemType-Keyboard/blob/main/PRIVACY.md</string>
+    <string name="about_contact">Contact</string>
+    <string name="about_contact_url" translatable="false">mailto:support@matily.org</string>
+    <string name="about_contact_email" translatable="false">support@matily.org</string>
+    <string name="about_open_source_licenses">Open-source licenses &amp; credits</string>
+    <string name="about_footer">© 2026 Matily · GNU AGPL-3.0</string>
+    <string name="about_credits">GemType is built on the open-source Indic Keyboard by Jishnu Mohan and contributors (Apache-2.0), which is based on the Android Open Source Project keyboard. Predictive transliteration by Varnam; layouts from jquery.ime; word lists from Wikipedia and Olam/Alar.</string>
 </resources>

@@ -19,6 +19,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:title="@string/about_open_source_licenses">
 
+    <org.smc.inputmethod.indic.settings.FlatPreference
+        android:key="about_credits"
+        android:title="@string/about_credits"
+        android:layout="@layout/settings_statement"
+        android:selectable="false"
+        android:persistent="false" />
+    <org.smc.inputmethod.indic.settings.FlatPreference
+        android:key="about_contributors"
+        android:title="@string/about_contributors"
+        android:layout="@layout/settings_flat_row"
+        android:persistent="false" />
+
     <PreferenceCategory app:iconSpaceReserved="false">
         <org.smc.inputmethod.indic.settings.FlatPreference android:key="lic_gemtype"
             android:fragment="org.smc.inputmethod.indic.settings.LicenseTextFragment"
