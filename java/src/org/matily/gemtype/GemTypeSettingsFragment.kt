@@ -53,9 +53,11 @@ class GemTypeSettingsFragment : SubScreenFragment() {
 
         // The key is masked while typed, and kept out of autofill.
         apiKey.setOnBindEditTextListener { edit ->
+            // setSingleLine() replaces the transformation method, so it must run before the
+            // password input type, or the key shows in clear text.
+            edit.setSingleLine()
             edit.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             edit.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
-            edit.setSingleLine()
             edit.setSelection(edit.text.length)
         }
         apiKey.setOnPreferenceChangeListener { _, value ->
