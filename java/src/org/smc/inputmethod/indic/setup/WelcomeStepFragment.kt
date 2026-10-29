@@ -21,12 +21,15 @@ internal class WelcomeStepFragment : Fragment() {
     ): View = inflater.inflate(R.layout.gemtype_setup_welcome, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val cycle = GreetingStyle.cycle(
+            resources.getStringArray(R.array.gemtype_setup_greetings),
+            banglaStyleFor(phoneCountries(requireContext())),
+            GreetingStyle.isNight(requireContext())
+        )
         greeting = GreetingAnimator(
             view.findViewById<GreetingTextView>(R.id.welcome_word),
-            resources.getStringArray(R.array.gemtype_setup_greetings),
-            GreetingStyle.cycle(
-                banglaStyleFor(phoneCountry(requireContext())), GreetingStyle.isNight(requireContext())
-            )
+            cycle.map { it.first }.toTypedArray(),
+            cycle.map { it.second }
         )
         view.findViewById<View>(R.id.welcome_get_started).setOnClickListener {
             (requireActivity() as SetupNavigator).goNext()

@@ -22,26 +22,35 @@ internal sealed class GreetingStyle {
     class Disc(val color: Int, val discColor: Int, val haloColor: Int, val haloDp: Float) : GreetingStyle()
 
     companion object {
-        /** The cycle, in the same order as the `gemtype_setup_greetings` texts. */
-        fun cycle(banglaStyle: BanglaStyle, night: Boolean): List<GreetingStyle> = listOf(
-            Horizontal(intArrayOf(0xFF1F5FD0.toInt(), 0xFF3D8BFF.toInt(), 0xFF6FA8FF.toInt())),
-            when (banglaStyle) {
-                BanglaStyle.BANGLADESH -> Disc(
-                    color = if (night) 0xFF2BB58A.toInt() else 0xFF006A4E.toInt(),
-                    discColor = 0xFFF42A41.toInt(),
-                    haloColor = 0xFFFFFFFF.toInt(),
-                    haloDp = 1.5f
-                )
-                BanglaStyle.INDIA -> indiaStyle()
-            },
-            indiaStyle(),
-            Solid(if (night) 0xFF3FAE70.toInt() else 0xFF01411C.toInt()),
-            Solid(
-                0xFFDC143C.toInt(),
-                outlineColor = if (night) 0xFF6E94E0.toInt() else 0xFF003893.toInt(),
-                outlineDp = 1f
+        /**
+         * The greetings to cycle through, each with its style. [texts] are the
+         * `gemtype_setup_greetings`: Welcome, Bangla, Hindi, Urdu, Nepali. When the phone is in
+         * neither Bangladesh nor India, Bangla is shown twice, once in each flag.
+         */
+        fun cycle(
+            texts: Array<String>, banglaStyle: BanglaStyle, night: Boolean
+        ): List<Pair<String, GreetingStyle>> {
+            val (welcome, bangla, hindi, urdu, nepali) = texts
+            val bangladesh = Disc(
+                color = if (night) 0xFF2BB58A.toInt() else 0xFF006A4E.toInt(),
+                discColor = 0xFFF42A41.toInt(),
+                haloColor = 0xFFFFFFFF.toInt(),
+                haloDp = 1.5f
             )
-        )
+            return listOfNotNull(
+                welcome to Horizontal(intArrayOf(0xFF1F5FD0.toInt(), 0xFF3D8BFF.toInt(), 0xFF6FA8FF.toInt())),
+                bangla to if (banglaStyle == BanglaStyle.INDIA) indiaStyle() else bangladesh,
+                hindi to indiaStyle(),
+                urdu to Solid(if (night) 0xFF3FAE70.toInt() else 0xFF01411C.toInt()),
+                // Spaced away from the first Bangla and from Hindi so the two flags alternate.
+                if (banglaStyle == BanglaStyle.BOTH) bangla to indiaStyle() else null,
+                nepali to Solid(
+                    0xFFDC143C.toInt(),
+                    outlineColor = if (night) 0xFF6E94E0.toInt() else 0xFF003893.toInt(),
+                    outlineDp = 1f
+                )
+            )
+        }
 
         private fun indiaStyle() = Split(top = 0xFFFF9933.toInt(), bottom = 0xFF138808.toInt())
 
@@ -51,19 +60,26 @@ internal sealed class GreetingStyle {
     }
 }
 
-/** Which flag the Bangla greeting wears. */
-internal enum class BanglaStyle { BANGLADESH, INDIA }
+/** Which flag the Bangla greeting wears; BOTH shows it twice, once in each. */
+internal enum class BanglaStyle { BANGLADESH, INDIA, BOTH }
 
-/** Bangla is Bangladesh's flag unless the phone is in India, where it wears India's. */
-internal fun banglaStyleFor(country: String?): BanglaStyle =
-    if (country.equals("IN", ignoreCase = true)) BanglaStyle.INDIA else BanglaStyle.BANGLADESH
+/**
+ * The first of [countries] (most telling first) that is Bangladesh or India decides; with
+ * neither, we can't tell which Bangla the user writes, so both are shown.
+ */
+internal fun banglaStyleFor(countries: List<String?>): BanglaStyle =
+    when (countries.firstOrNull { it.equals("BD", true) || it.equals("IN", true) }?.uppercase()) {
+        "BD" -> BanglaStyle.BANGLADESH
+        "IN" -> BanglaStyle.INDIA
+        else -> BanglaStyle.BOTH
+    }
 
-/** The phone's country: the locale's, else the SIM's, else the network's. No permission needed. */
-internal fun phoneCountry(context: Context): String {
-    Locale.getDefault().country.takeIf { it.isNotEmpty() }?.let { return it }
+/**
+ * Hints at the phone's country, most telling first: the region the user picked for the phone's
+ * language, then the SIM's, then the network's. A Bangladeshi abroad with the phone in "English
+ * (US)" still has a Bangladeshi SIM. No permission needed.
+ */
+internal fun phoneCountries(context: Context): List<String?> {
     val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-        ?: return ""
-    return tm.simCountryIso.takeIf { !it.isNullOrEmpty() }
-        ?: tm.networkCountryIso.takeIf { !it.isNullOrEmpty() }
-        ?: ""
+    return listOf(Locale.getDefault().country, tm?.simCountryIso, tm?.networkCountryIso)
 }
