@@ -55,6 +55,9 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         /** Return to the main keyboard (resetting its composing/suggestion state). */
         fun closePanel()
         fun openSettings()
+
+        /** Share [text] (only used by [showText], when the result cannot be put back). */
+        fun share(text: CharSequence) {}
     }
 
     enum class Scope { FIELD, SELECTION }
@@ -75,6 +78,10 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private var error: String? = null
     private var loading = false
 
+    // Set by [showText]: the text comes from outside (selection menu / share sheet), not the field.
+    private var external = false
+    private var canReplace = true
+
     // ---- views and theme colours --------------------------------------------------------
     private val scopeLabel: TextView = panel.findViewById(R.id.gemtype_panel_scope)
     private val titleView: TextView = panel.findViewById(R.id.gemtype_panel_title)
@@ -89,15 +96,18 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private val buttons: View = panel.findViewById(R.id.gemtype_panel_buttons)
     private val copyButton: TextView = panel.findViewById(R.id.gemtype_panel_copy)
     private val replaceButton: TextView = panel.findViewById(R.id.gemtype_panel_replace)
+    private val shareButton: TextView = panel.findViewById(R.id.gemtype_panel_share)
+    private val keyboardKey: ImageButton = panel.findViewById(R.id.gemtype_panel_keyboard_key)
     private val chipViews = HashMap<Action, TextView>()
 
-    private val surface = themeColor(R.attr.md3Surface, Color.WHITE)
-    private val onSurface = themeColor(R.attr.md3OnSurface, Color.BLACK)
-    private val onSurfaceVariant = themeColor(R.attr.md3OnSurfaceVariant, Color.DKGRAY)
-    private val primary = themeColor(R.attr.md3Primary, ACCENT)
-    private val onPrimary = themeColor(R.attr.md3OnPrimary, Color.WHITE)
-    private val keyColor = themeColor(R.attr.md3KeyColor, Color.LTGRAY)
-    private val functionalColor = themeColor(R.attr.md3FunctionalKeyColor, Color.LTGRAY)
+    // Keyboard theme attrs first; an activity theme has none of them, so fall back to Material's.
+    private val surface = themeColor(R.attr.md3Surface, Color.WHITE, R.attr.colorSurface)
+    private val onSurface = themeColor(R.attr.md3OnSurface, Color.BLACK, R.attr.colorOnSurface)
+    private val onSurfaceVariant = themeColor(R.attr.md3OnSurfaceVariant, Color.DKGRAY, R.attr.colorOnSurfaceVariant)
+    private val primary = themeColor(R.attr.md3Primary, ACCENT, R.attr.colorPrimary)
+    private val onPrimary = themeColor(R.attr.md3OnPrimary, Color.WHITE, R.attr.colorOnPrimary)
+    private val keyColor = themeColor(R.attr.md3KeyColor, Color.LTGRAY, R.attr.colorSurfaceContainerHigh)
+    private val functionalColor = themeColor(R.attr.md3FunctionalKeyColor, Color.LTGRAY, R.attr.colorSurfaceContainerHighest)
     private val dark = ColorUtils.calculateLuminance(surface) < 0.5
     private val errorColor = if (dark) 0xFFF2B8B5.toInt() else 0xFFB3261E.toInt()
     private val diffColors = if (dark) {
@@ -120,7 +130,10 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         copyButton.background = ripple(roundRect(Color.TRANSPARENT, 12f, strokeColor = ColorUtils.setAlphaComponent(primary, 0x80)))
         replaceButton.setTextColor(onPrimary)
         replaceButton.background = ripple(roundRect(primary, 12f))
-        panel.findViewById<ImageButton>(R.id.gemtype_panel_keyboard_key).setOnClickListener { host.closePanel() }
+        shareButton.setTextColor(onPrimary)
+        shareButton.background = ripple(roundRect(primary, 12f))
+        shareButton.setOnClickListener { results[mode]?.let { host.share(it) } }
+        keyboardKey.setOnClickListener { host.closePanel() }
         linkButton.setOnClickListener { onLinkButton() }
         copyButton.setOnClickListener { copy() }
         replaceButton.setOnClickListener { replace() }
@@ -147,10 +160,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     /** The panel was just shown: read the text and run Fix. */
     fun onShown() {
         job?.cancel()
-        results.clear()
-        error = null
-        loading = false
-        mode = Action.FIX
+        external = false
+        reset()
         if (host.isPasswordField()) {
             host.closePanel()
             return
@@ -162,6 +173,39 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             return
         }
         readText(ic)
+        startFix()
+    }
+
+    /**
+     * Use [text] from outside the field (selection menu, share sheet) instead of reading the
+     * InputConnection, and run Fix. [canReplace] false shows Share instead of Replace.
+     */
+    fun showText(text: String, canReplace: Boolean) {
+        job?.cancel()
+        external = true
+        this.canReplace = canReplace
+        reset()
+        textScope = Scope.SELECTION
+        source = text
+        status = when {
+            text.isBlank() -> Status.EMPTY
+            text.length > MAX_CHARS -> Status.TOO_LONG
+            else -> Status.READY
+        }
+        startFix()
+    }
+
+    /** True when the last [showText] stopped because no API key is saved. */
+    val needsKey: Boolean get() = status == Status.NO_KEY
+
+    private fun reset() {
+        results.clear()
+        error = null
+        loading = false
+        mode = Action.FIX
+    }
+
+    private fun startFix() {
         if (status != Status.READY) {
             render()
             return
@@ -224,6 +268,10 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
     private fun replace() {
         val result = results[mode] ?: return
+        if (external) {
+            host.replaceSelection(result)
+            return
+        }
         val ic = host.inputConnection() ?: return
         // Make sure we are about to replace exactly what we sent to Gemini.
         val stale = if (textScope == Scope.SELECTION) {
@@ -307,12 +355,15 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private fun render() {
         val ready = status == Status.READY
         scopeLabel.text = when {
-            !ready -> ""
+            !ready || external -> ""
             textScope == Scope.SELECTION -> context.getString(R.string.gemtype_scope_selection)
             else -> context.getString(R.string.gemtype_scope_field)
         }
         chipsScroll.visibility = if (ready) View.VISIBLE else View.GONE
         buttons.visibility = if (ready) View.VISIBLE else View.GONE
+        replaceButton.visibility = if (external && !canReplace) View.GONE else View.VISIBLE
+        shareButton.visibility = if (external && !canReplace) View.VISIBLE else View.GONE
+        keyboardKey.visibility = if (external) View.GONE else View.VISIBLE
         progress.visibility = if (ready && loading) View.VISIBLE else View.GONE
         linkButton.visibility = View.GONE
         textView.setTextColor(onSurface)
@@ -327,7 +378,9 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
                     linkButton.setText(R.string.gemtype_add_key)
                     linkButton.visibility = View.VISIBLE
                 }
-                Status.TOO_LONG -> textView.text = context.getString(R.string.gemtype_too_long, MAX_CHARS)
+                Status.TOO_LONG -> textView.text = context.getString(
+                    if (external) R.string.gemtype_too_long_shared else R.string.gemtype_too_long, MAX_CHARS,
+                )
                 Status.STALE -> textView.setText(R.string.gemtype_text_changed)
                 else -> textView.setText(R.string.gemtype_empty_field)
             }
@@ -351,7 +404,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             }
         }
         val canApply = result != null
-        for ((button, enabled) in listOf(copyButton to canApply, replaceButton to canApply)) {
+        for ((button, enabled) in listOf(copyButton to canApply, replaceButton to canApply, shareButton to canApply)) {
             button.isEnabled = enabled
             button.alpha = if (enabled) 1f else 0.4f
         }
@@ -378,11 +431,14 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private fun ripple(content: GradientDrawable) =
         RippleDrawable(ColorStateList.valueOf(ColorUtils.setAlphaComponent(onSurface, 0x22)), content, null)
 
-    private fun themeColor(attr: Int, fallback: Int): Int {
+    private fun themeColor(attr: Int, fallback: Int, alt: Int = 0): Int {
         val value = TypedValue()
-        return if (context.theme.resolveAttribute(attr, value, true) &&
-            value.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT
-        ) value.data else fallback
+        for (a in intArrayOf(attr, alt)) {
+            if (a != 0 && context.theme.resolveAttribute(a, value, true) &&
+                value.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT
+            ) return value.data
+        }
+        return fallback
     }
 
     companion object {

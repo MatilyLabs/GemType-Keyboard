@@ -140,6 +140,48 @@
                 android:excludeFromRecents="true"
                 android:windowSoftInputMode="adjustResize" />
 
+        <!-- GemType in the text-selection menu (PROCESS_TEXT) and the share sheet (SEND). Enabled
+             only on API 23+; removed in the offline flavor. -->
+        <activity android:name="org.matily.gemtype.RefineActivity"
+                android:theme="@style/GemTypeTranslucent"
+                android:label="@string/gemtype_process_text_label"
+                android:enabled="@bool/gemtype_entry_points_enabled"
+                android:exported="true"
+                android:taskAffinity=""
+                android:excludeFromRecents="true"
+                android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode">
+            <intent-filter android:label="@string/gemtype_process_text_label">
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter android:label="@string/gemtype_share_label">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <!-- Opened by the "Fix clipboard" tile. -->
+        <activity android:name="org.matily.gemtype.ClipboardFixActivity"
+                android:theme="@style/GemTypeTranslucent.NoDim"
+                android:enabled="@bool/gemtype_entry_points_enabled"
+                android:exported="false"
+                android:launchMode="singleInstance"
+                android:taskAffinity=""
+                android:excludeFromRecents="true" />
+
+        <service android:name="org.matily.gemtype.FixClipboardTileService"
+                android:label="@string/gemtype_tile_label"
+                android:icon="@drawable/gemtype_ic_tile"
+                android:enabled="@bool/gemtype_tile_enabled"
+                android:exported="true"
+                android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <activity android:name="org.smc.inputmethod.indic.settings.SettingsActivity"
                 android:theme="@style/Theme.IndicKeyboard.Settings"
                 android:exported="true"

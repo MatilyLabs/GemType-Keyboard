@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Matily. SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- GemType's selection-menu / share target and clipboard tile are only enabled where GemType
+     works: API 23+ (encrypted key store); the tile service also needs API 24. The offline flavor
+     removes all three from its manifest (offline/AndroidManifest.xml). -->
+<resources>
+    <bool name="gemtype_entry_points_enabled">false</bool>
+    <bool name="gemtype_tile_enabled">false</bool>
+</resources>

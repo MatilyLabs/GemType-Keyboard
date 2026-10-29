@@ -32,4 +32,16 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:minHeight">48dp</item>
     </style>
+
+    <!-- Transparent windows for the selection-menu sheet and the clipboard tile card. -->
+    <style name="GemTypeTranslucent" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
+
+    <style name="GemTypeTranslucent.NoDim">
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

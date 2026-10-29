@@ -21,6 +21,9 @@ class GemTypePanelView @JvmOverloads constructor(
 
     private var totalHeight = 0
 
+    /** False when hosted in an activity sheet: then the parent decides the size. */
+    var keyboardSized = true
+
     /** Height to occupy, excluding the bottom navigation-bar padding InputView adds. */
     fun setTotalHeight(height: Int) {
         if (height > 0 && height != totalHeight) {
@@ -36,6 +39,7 @@ class GemTypePanelView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        if (!keyboardSized) return super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         val res = context.resources
         val width = ResourceUtils.getKeyboardContentWidth(context) + paddingLeft + paddingRight
         val height = (if (totalHeight > 0) totalHeight else

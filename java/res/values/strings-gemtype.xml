@@ -10,14 +10,28 @@
     <string name="gemtype_scope_field">Whole field</string>
     <string name="gemtype_copy">Copy</string>
     <string name="gemtype_replace">Replace</string>
+    <string name="gemtype_share">Share</string>
     <string name="gemtype_copied">Copied</string>
     <string name="gemtype_loading">Asking Gemini…</string>
     <string name="gemtype_try_again">Try again</string>
     <string name="gemtype_empty_field">Type something first, then tap GemType.</string>
     <string name="gemtype_too_long">That text is too long for GemType (limit: %1$d characters on each side of the cursor). Select a shorter part and try again.</string>
+    <string name="gemtype_too_long_shared">That text is too long for GemType (limit: %1$d characters).</string>
     <string name="gemtype_no_key">Add your Gemini API key to use GemType</string>
     <string name="gemtype_add_key">Add API key</string>
     <string name="gemtype_text_changed">The text changed while GemType was open. Close and reopen GemType.</string>
+
+    <!-- Selection menu, share sheet, Quick Settings tile -->
+    <string name="gemtype_process_text_label" translatable="false">GemType</string>
+    <string name="gemtype_share_label">Fix with GemType</string>
+    <string name="gemtype_tile_label">Fix clipboard</string>
+    <string name="gemtype_no_text">No text to fix</string>
+    <string name="gemtype_clip_working">Fixing your clipboard…</string>
+    <string name="gemtype_clip_done">Fixed — copied</string>
+    <string name="gemtype_clip_undo">Undo</string>
+    <string name="gemtype_clip_restored">Original text restored</string>
+    <string name="gemtype_clip_empty">Clipboard is empty — copy some text first.</string>
+    <string name="gemtype_error_generic">Something went wrong. Try again.</string>
 
     <!-- Settings -->
     <string name="gemtype_settings_title">GemType</string>
