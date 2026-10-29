@@ -332,6 +332,7 @@ public final class InputLogic {
      */
     public void replaceTextFromPanel(final boolean wholeField, final CharSequence text,
             final int beforeLength, final int afterLength) {
+        mConnection.orderExpectedSelection();
         mConnection.beginBatchEdit();
         resetComposingState(true /* alsoResetLastComposedWord */);
         mConnection.finishComposingText();

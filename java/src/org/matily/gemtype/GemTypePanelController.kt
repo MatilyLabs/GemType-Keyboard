@@ -62,6 +62,9 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
         /** Whether a lower-case word is valid English, or null when there is no English dictionary to ask. */
         fun englishCheck(): ((String) -> Boolean)? = null
+
+        /** Replace [field] with [result] went through and the panel is closed: offer Undo. */
+        fun onReplaced(field: FieldText, result: CharSequence) {}
     }
 
     /** What a chip does: an [Action], plus the language (code) to write in for [Action.NATIVE]. */
@@ -72,7 +75,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private enum class Status { READY, EMPTY, NO_KEY, TOO_LONG, STALE }
 
     private val context: Context = panel.context
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + GemType.uncaught())
     private var job: Job? = null
 
     private var status = Status.EMPTY
@@ -229,16 +232,25 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         loading = true
         render()
         job = scope.launch {
-            val hasKey = withContext(Dispatchers.IO) { GemTypeSettings.load(context).apiKey.isNotBlank() }
-            RomanizedLists.load(context)
-            if (hasKey) {
-                // Text typed in English letters that looks like one of the user's languages: convert it first, not Fix.
-                val native = detectLanguages()
-                setChips(native)
-                fetch(native.firstOrNull()?.let { Pick(Action.NATIVE, it.language) } ?: Pick(Action.FIX))
-            } else {
+            try {
+                val hasKey = withContext(Dispatchers.IO) { GemTypeSettings.load(context).apiKey.isNotBlank() }
+                RomanizedLists.load(context)
+                if (hasKey) {
+                    // Text typed in English letters that looks like one of the user's languages: convert it first, not Fix.
+                    val native = detectLanguages()
+                    setChips(native)
+                    fetch(native.firstOrNull()?.let { Pick(Action.NATIVE, it.language) } ?: Pick(Action.FIX))
+                } else {
+                    loading = false
+                    status = Status.NO_KEY
+                    render()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // E.g. the key store or the word lists failed to open: show it, never leave the spinner up.
                 loading = false
-                status = Status.NO_KEY
+                error = context.getString(R.string.gemtype_error_generic)
                 render()
             }
         }
@@ -286,12 +298,14 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             return
         }
         // Make sure we are about to replace exactly what we sent to Gemini.
-        if (field?.replace(host, result) != true) {
+        val sent = field
+        if (sent == null || !sent.replace(host, result)) {
             status = Status.STALE
             render()
             return
         }
         host.closePanel()
+        host.onReplaced(sent, result)
     }
 
     private fun copy() {
@@ -305,7 +319,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     // ---- requests ------------------------------------------------------------------------
 
     private fun pick(pick: Pick) {
-        if (status != Status.READY) return
+        // Tapping the chip that is already running would only restart the same request.
+        if (status != Status.READY || (loading && pick == mode)) return
         mode = pick
         if (results.containsKey(pick)) {
             job?.cancel()

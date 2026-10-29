@@ -8,10 +8,13 @@ import android.view.inputmethod.InputConnection
  * The text GemType works on: the selection if there is one, else the whole field, read straight from
  * the InputConnection (not the keyboard's 1024-char cache). Shared by the panel and the conversion pill.
  */
-internal class FieldText private constructor(
+class FieldText private constructor(
     val scope: Scope,
     val text: String,
     val status: Status,
+    /** Where the cursor (or the selection) was inside [text], to put back on Undo. */
+    val selectionStart: Int,
+    val selectionEnd: Int,
 ) {
     enum class Scope { FIELD, SELECTION }
     enum class Status { READY, EMPTY, TOO_LONG }
@@ -42,12 +45,16 @@ internal class FieldText private constructor(
         fun read(ic: InputConnection): FieldText {
             val selected = ic.getSelectedText(0)?.toString()
             if (!selected.isNullOrEmpty()) {
-                return FieldText(Scope.SELECTION, selected, statusOf(selected, selected.length > MAX_CHARS))
+                return FieldText(
+                    Scope.SELECTION, selected, statusOf(selected, selected.length > MAX_CHARS), 0, selected.length,
+                )
             }
             val b = ic.getTextBeforeCursor(MAX_CHARS, 0)?.toString().orEmpty()
             val a = ic.getTextAfterCursor(MAX_CHARS, 0)?.toString().orEmpty()
             // Replacing only part of a longer field would leave the rest behind.
-            return FieldText(Scope.FIELD, b + a, statusOf(b + a, b.length >= MAX_CHARS || a.length >= MAX_CHARS))
+            return FieldText(
+                Scope.FIELD, b + a, statusOf(b + a, b.length >= MAX_CHARS || a.length >= MAX_CHARS), b.length, b.length,
+            )
         }
 
         private fun statusOf(text: String, tooLong: Boolean) = when {

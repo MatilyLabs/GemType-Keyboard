@@ -668,6 +668,18 @@ public final class RichInputConnection implements PrivateCommandPerformer {
     }
 
     /**
+     * A selection made backwards (cursor before the anchor) is reported with start > end, but
+     * {@link #commitText} adds the new text's length to the start. Put them in order first.
+     */
+    public void orderExpectedSelection() {
+        if (mExpectedSelStart > mExpectedSelEnd) {
+            final int start = mExpectedSelStart;
+            mExpectedSelStart = mExpectedSelEnd;
+            mExpectedSelEnd = start;
+        }
+    }
+
+    /**
      * Set the selection of the text editor.
      *
      * Calls through to {@link InputConnection#setSelection(int, int)}.

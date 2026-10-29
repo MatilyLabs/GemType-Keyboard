@@ -40,4 +40,8 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : ConvertController.Host {
     }
 
     override fun clearSuggestions() = ime.setNeutralSuggestionStrip()
+
+    override fun select(start: Int, end: Int) = ime.setSelectionFromGemType(start, end)
+
+    override fun onReplaced(field: FieldText, result: CharSequence) = ime.offerGemTypeUndo(field, result)
 }

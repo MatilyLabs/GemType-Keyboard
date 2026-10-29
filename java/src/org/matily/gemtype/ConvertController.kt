@@ -4,7 +4,6 @@ package org.matily.gemtype
 
 import android.os.Handler
 import android.os.Looper
-import android.widget.Toast
 import com.android.inputmethod.latin.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -42,19 +41,25 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
 
         /** Reset the suggestion strip after the text was replaced. */
         fun clearSuggestions()
+
+        /** Select [start]..[end] in the field (a cursor when equal). */
+        fun select(start: Int, end: Int)
     }
 
-    private class Undo(val original: String, val result: String, val cursor: Int)
+    /** [field] was replaced by [result], leaving the cursor at [cursor]. */
+    private class Undo(val field: FieldText, val result: String, val cursor: Int)
 
     private val context = bar.context
     private val handler = Handler(Looper.getMainLooper())
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + GemType.uncaught())
     private var job: Job? = null
     private var matches = emptyList<Romanized.Match>()
     private var busy = -1
     private var undo: Undo? = null
+    private var message: String? = null
     private val evaluate = Runnable { evaluate() }
     private val undoExpired = Runnable { clearUndo() }
+    private val messageExpired = Runnable { clearMessage() }
 
     init {
         bar.onPillClick = ::onPillClick
@@ -77,7 +82,8 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
             if (start == undo.cursor && end == undo.cursor) return
             clearUndo()
         }
-        if (busy < 0) schedule()
+        // The user is typing again: a leftover error would only be in the way.
+        if (message != null) clearMessage() else if (busy < 0) schedule()
     }
 
     fun onSubtypeChanged() = schedule()
@@ -103,7 +109,7 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
     }
 
     private fun detect(): List<Romanized.Match> {
-        if (!GemType.isEnabled || undo != null || busy >= 0 || host.isPasswordField() ||
+        if (!GemType.isEnabled || undo != null || message != null || busy >= 0 || host.isPasswordField() ||
             !host.isLatinKeyboard() || !ConvertPrefs.showPill(context)
         ) return emptyList()
         val languages = RomanizedLists.enabledNonLatinLanguages(context)
@@ -112,8 +118,8 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         if (lists == null) {
             // First use: read the lists off the main thread, then look again.
             scope.launch {
-                RomanizedLists.load(context)
-                schedule()
+                // Missing lists just mean no pills; never let that crash the keyboard.
+                runCatching { RomanizedLists.load(context) }.onSuccess { schedule() }
             }
             return emptyList()
         }
@@ -123,6 +129,7 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
     }
 
     private fun render() {
+        message?.let { return bar.showMessage(it) }
         val labels = when {
             undo != null -> listOf(context.getString(R.string.gemtype_pill_undo))
             else -> matches.map { context.getString(R.string.gemtype_pill_label, Romanized.nativeName(it.language)) }
@@ -136,6 +143,7 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         handler.removeCallbacksAndMessages(null)
         busy = -1
         undo = null
+        message = null
         matches = emptyList()
         render()
     }
@@ -146,6 +154,7 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         val undo = undo
         when {
             busy >= 0 -> {}
+            message != null -> clearMessage()
             undo != null -> undoConversion(undo)
             else -> matches.getOrNull(index)?.let { convert(index, it.language) }
         }
@@ -155,8 +164,8 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         val ic = host.inputConnection() ?: return
         val field = FieldText.read(ic)
         when (field.status) {
-            FieldText.Status.EMPTY -> return toast(context.getString(R.string.gemtype_empty_field))
-            FieldText.Status.TOO_LONG -> return toast(context.getString(R.string.gemtype_too_long, FieldText.MAX_CHARS))
+            FieldText.Status.EMPTY -> return showMessage(context.getString(R.string.gemtype_pill_empty))
+            FieldText.Status.TOO_LONG -> return showMessage(context.getString(R.string.gemtype_pill_too_long))
             FieldText.Status.READY -> {}
         }
         ConvertPrefs.setLastLanguage(context, language)
@@ -172,17 +181,17 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
                 val result = GemType.client.refine(field.text, Action.NATIVE, config, Romanized.englishName(language))
                 if (field.replace(host, result)) {
                     host.clearSuggestions()
-                    undo = Undo(field.text, result, host.cursor())
-                    handler.postDelayed(undoExpired, UNDO_MS)
+                    busy = -1
+                    offerUndo(field, result)
                 } else {
-                    toast(context.getString(R.string.gemtype_pill_text_changed))
+                    showMessage(context.getString(R.string.gemtype_pill_text_changed))
                 }
             } catch (e: GeminiException) {
-                toast(e.friendly)
+                showMessage(e.brief)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                toast(context.getString(R.string.gemtype_error_generic))
+                showMessage(context.getString(R.string.gemtype_error_generic))
             } finally {
                 busy = -1
                 if (isActive) {
@@ -192,15 +201,35 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         }
     }
 
+    /**
+     * [field] was just replaced by [result] (by a pill, or by Replace in the panel): show Undo
+     * for [UNDO_MS], or until the user types or moves the cursor.
+     */
+    fun offerUndo(field: FieldText, result: CharSequence) {
+        handler.removeCallbacks(evaluate)
+        handler.removeCallbacks(messageExpired)
+        message = null
+        undo = Undo(field, result.toString(), host.cursor())
+        handler.removeCallbacks(undoExpired)
+        handler.postDelayed(undoExpired, UNDO_MS)
+        render()
+    }
+
     private fun undoConversion(undo: Undo) {
         clearUndo()
         val ic = host.inputConnection() ?: return
         // Only if the converted text is still right before the cursor.
         if (ic.getTextBeforeCursor(undo.result.length, 0)?.toString() != undo.result) {
-            return toast(context.getString(R.string.gemtype_pill_text_changed))
+            return showMessage(context.getString(R.string.gemtype_pill_text_changed))
         }
-        host.replaceField(undo.original, undo.result.length, 0)
+        val original = undo.field
+        val start = host.cursor() - undo.result.length
+        host.replaceField(original.text, undo.result.length, 0)
         host.clearSuggestions()
+        // The replacement leaves the cursor at the end; put the cursor (or selection) back where it was.
+        if (start >= 0 && (original.selectionStart != original.text.length || original.selectionEnd != original.text.length)) {
+            host.select(start + original.selectionStart, start + original.selectionEnd)
+        }
     }
 
     private fun clearUndo() {
@@ -211,10 +240,24 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         schedule()
     }
 
-    private fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    /** Show [text] in the strip for a few seconds (not a toast: those are suppressed when the app's notifications are off). */
+    private fun showMessage(text: String) {
+        message = text
+        handler.removeCallbacks(messageExpired)
+        handler.postDelayed(messageExpired, MESSAGE_MS)
+        render()
+    }
+
+    private fun clearMessage() {
+        handler.removeCallbacks(messageExpired)
+        if (message == null) return
+        message = null
+        evaluate()
+    }
 
     private companion object {
         const val DEBOUNCE_MS = 400L
         const val UNDO_MS = 6_000L
+        const val MESSAGE_MS = 4_000L
     }
 }

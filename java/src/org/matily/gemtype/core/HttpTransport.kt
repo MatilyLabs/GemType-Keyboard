@@ -4,8 +4,10 @@ package org.matily.gemtype.core
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeout
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
@@ -35,6 +37,9 @@ class HttpTransport(
     // A fix should take a second or two; past this the model is struggling, and the
     // user is better off retrying or switching.
     private val readTimeoutMs: Int = 30_000,
+    // The two timeouts above restart on every byte (and do not cover DNS), so a server that
+    // trickles an answer, or a stuck lookup, could keep the spinner up; this bounds the whole exchange.
+    private val deadlineMs: Long = 45_000,
 ) : Transport {
 
     override suspend fun post(model: String, apiKey: String, body: String): HttpResult = coroutineScope {
@@ -46,7 +51,11 @@ class HttpTransport(
         val aborted = AtomicBoolean(false)
         val exchange = async(Dispatchers.IO) { exchange(conn, apiKey, body, aborted) }
         try {
-            exchange.await()
+            withTimeout(deadlineMs) { exchange.await() }
+        } catch (e: TimeoutCancellationException) {
+            aborted.set(true)
+            conn.disconnect()
+            throw GeminiException(GeminiException.Kind.TIMEOUT)
         } catch (e: CancellationException) {
             // The blocking read can't be interrupted; closing the socket unblocks it.
             aborted.set(true)

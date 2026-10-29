@@ -11,13 +11,15 @@ itself is never printed). Replies use the same structured-JSON shape the app
 asks Gemini for: {"rewritten": "..."}. Failure cases for the Test key button:
 "native script" prompts -> a fixed sentence in the language named in the prompt, "Translate" -> English;
 key "bad-key" -> 400 invalid key; any model id not starting "gemini-3" -> 404.
+Failure modes keyed by the API key (a key that merely contains the word, e.g. AIzaMOCKRATE000000000000000000000000000):
+RATE -> 429, BUSY -> 503, LOCATION -> 400 "User location is not supported" (what Google says to unsupported regions, VPNs included), SLOW -> answers only after 40 s (MOCK_SLOW=n to change), GARBAGE -> 200 with a body that is not JSON.
 MOCK_DELAY=2 python3 tools/gemtype/mock_gemini.py answers after 2 s (to see spinners).
 """
 import json
 import os
 import sys
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 # Canned rewrites keyed by the first words of each action's prompt.
 DEMO = {
@@ -47,6 +49,17 @@ class Handler(BaseHTTPRequestHandler):
         print(f"\n{self.path}  key={'set' if key else 'MISSING'}", flush=True)
         print(json.dumps(body, indent=2, ensure_ascii=False), flush=True)
         time.sleep(float(os.environ.get("MOCK_DELAY", "0")))
+        if "SLOW" in key:
+            time.sleep(float(os.environ.get("MOCK_SLOW", "40")))
+        if "RATE" in key:
+            return self.reply(429, {"error": {"message": "Resource has been exhausted (e.g. check quota)."}})
+        if "LOCATION" in key:
+            return self.reply(400, {"error": {"code": 400, "status": "FAILED_PRECONDITION",
+                                              "message": "User location is not supported for the API use."}})
+        if "BUSY" in key:
+            return self.reply(503, {"error": {"message": "The model is overloaded. Please try again later."}})
+        if "GARBAGE" in key:
+            return self.reply_raw(200, b"<html>not json {{{")
         if not key or key == "bad-key":
             return self.reply(400, {"error": {"message": "API key not valid. Please pass a valid API key."}})
         model = self.path.split("/models/")[-1].split(":")[0]
@@ -67,7 +80,9 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200, {"candidates": [{"content": {"parts": [{"text": json.dumps({"rewritten": out})}]}}]})
 
     def reply(self, status, obj):
-        data = json.dumps(obj).encode()
+        self.reply_raw(status, json.dumps(obj).encode())
+
+    def reply_raw(self, status, data):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
@@ -81,4 +96,4 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
     print(f"mock Gemini on :{port}", flush=True)
-    HTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()

@@ -191,6 +191,73 @@ class GemtypeCoreTest {
         assertTrue(invalid.friendly.contains("aistudio.google.com"))
     }
 
+    @Test fun garbageAnswersAreAnEmptyResponseNotACrash() {
+        assertEquals(GeminiException.Kind.EMPTY_RESPONSE, kindOf(200, "<html>not json {{{"))
+        assertEquals(GeminiException.Kind.EMPTY_RESPONSE, kindOf(200, ""))
+        assertEquals(GeminiException.Kind.API_KEY_ERROR, kindOf(400, "<html>bad gateway</html>"))
+        assertEquals(GeminiException.Kind.RATE_LIMITED, kindOf(429, "<html>slow down</html>"))
+    }
+
+    private val locationBody = "{\"error\":{\"code\":400,\"status\":\"FAILED_PRECONDITION\"," +
+        "\"message\":\"User location is not supported for the API use.\"}}"
+
+    @Test fun unsupportedLocationIsNotABadKey() {
+        assertEquals(GeminiException.Kind.LOCATION_UNSUPPORTED, kindOf(400, locationBody))
+        assertEquals(GeminiException.Kind.LOCATION_UNSUPPORTED, kindOf(403, locationBody.replace("location is", "LOCATION IS")))
+        // Any other 400 stays a key problem.
+        assertEquals(GeminiException.Kind.API_KEY_ERROR, kindOf(400, "{\"error\":{\"message\":\"API key not valid.\"}}"))
+    }
+
+    @Test fun locationMessageDependsOnTheVpn() {
+        val e = GeminiException(GeminiException.Kind.LOCATION_UNSUPPORTED, "User location is not supported for the API use.")
+        assertEquals("Gemini isn't available in your current location yet.", e.friendly(false))
+        assertEquals(
+            "Gemini isn't available through your VPN's location. Turn off the VPN (or pick another country) and try again.",
+            e.friendly(true),
+        )
+        assertFalse(e.friendly(false).contains("key", ignoreCase = true))
+        assertFalse(e.friendly(true).contains("key", ignoreCase = true))
+        assertTrue(e.brief(true).contains("VPN"))
+        assertFalse(e.brief(false).contains("VPN"))
+    }
+
+    @Test fun networkAndTimeoutErrorsHintAtTheVpnOnlyWhenOneIsActive() {
+        val hint = " If you're using a VPN, try turning it off."
+        for (kind in listOf(GeminiException.Kind.NETWORK, GeminiException.Kind.TIMEOUT)) {
+            val e = GeminiException(kind)
+            assertFalse(e.friendly(false).contains("VPN"))
+            assertEquals(e.friendly(false) + hint, e.friendly(true))
+            assertTrue(e.brief(true).contains("VPN"))
+            assertFalse(e.brief(false).contains("VPN"))
+        }
+        // Other failures never blame the VPN.
+        assertFalse(GeminiException(GeminiException.Kind.RATE_LIMITED).friendly(true).contains("VPN"))
+        assertFalse(GeminiException(GeminiException.Kind.BUSY).friendly(true).contains("VPN"))
+    }
+
+    @Test fun theVpnCheckIsInjectable() {
+        val saved = VpnState.isActive
+        try {
+            VpnState.isActive = { true }
+            assertTrue(GeminiException(GeminiException.Kind.NETWORK).friendly.contains("VPN"))
+            VpnState.isActive = { false }
+            assertFalse(GeminiException(GeminiException.Kind.NETWORK).friendly.contains("VPN"))
+        } finally {
+            VpnState.isActive = saved
+        }
+    }
+
+    @Test fun everyFailureHasAShortMessageForTheStrip() {
+        for (vpn in listOf(false, true)) for (kind in GeminiException.Kind.values()) {
+            val brief = GeminiException(kind, "detail").brief(vpn)
+            assertTrue("$kind: '$brief'", brief.isNotBlank() && brief.length <= 46)
+        }
+        assertEquals("That API key isn't valid.",
+            GeminiException(GeminiException.Kind.API_KEY_ERROR, "API key not valid. Please pass a valid API key.").brief)
+        assertTrue(GeminiException(GeminiException.Kind.RATE_LIMITED).brief.contains("Rate limit"))
+        assertTrue(GeminiException(GeminiException.Kind.NETWORK).brief.contains("Can't reach"))
+    }
+
     // ---- client -------------------------------------------------------------------------
 
     private val config = GemtypeConfig("k", Choices.DEFAULT_MODEL, Choices.AUTO_LANGUAGE)

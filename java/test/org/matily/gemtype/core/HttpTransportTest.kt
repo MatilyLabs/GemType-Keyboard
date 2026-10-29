@@ -42,8 +42,8 @@ class HttpTransportTest {
 
     @After fun stop() = server.stop(0)
 
-    private fun transport(readTimeoutMs: Int = 30_000) =
-        HttpTransport("http://127.0.0.1:${server.address.port}/models", readTimeoutMs = readTimeoutMs)
+    private fun transport(readTimeoutMs: Int = 30_000, deadlineMs: Long = 45_000) =
+        HttpTransport("http://127.0.0.1:${server.address.port}/models", readTimeoutMs = readTimeoutMs, deadlineMs = deadlineMs)
 
     @Test fun postsWithTheKeyHeaderAndReturnsTheBody() = runBlocking {
         val result = transport().post("ok", " secret ", "{}")
@@ -80,6 +80,17 @@ class HttpTransportTest {
         } catch (e: GeminiException) {
             assertEquals(GeminiException.Kind.TIMEOUT, e.kind)
         }
+    }
+
+    @Test fun theWholeExchangeHasADeadlineEvenWithALongReadTimeout() = runBlocking {
+        val start = System.nanoTime()
+        try {
+            transport(readTimeoutMs = 30_000, deadlineMs = 400).post("slow", "k", "{}")
+            fail("expected a timeout")
+        } catch (e: GeminiException) {
+            assertEquals(GeminiException.Kind.TIMEOUT, e.kind)
+        }
+        assertTrue("took too long", (System.nanoTime() - start) / 1_000_000 < 3_000)
     }
 
     @Test fun anUnreachableServerIsANetworkError() = runBlocking {

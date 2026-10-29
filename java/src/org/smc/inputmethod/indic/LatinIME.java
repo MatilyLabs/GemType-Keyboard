@@ -141,6 +141,7 @@ import org.smc.inputmethod.indic.settings.SettingsActivity;
 import org.smc.inputmethod.indic.settings.ThemeSettingsFragment;
 import org.smc.inputmethod.indic.setup.GemTypeKeyActivity;
 import org.matily.gemtype.ConvertController;
+import org.matily.gemtype.FieldText;
 import org.matily.gemtype.LatinImeGemTypeHost;
 import org.smc.inputmethod.indic.settings.SettingsValues;
 import org.smc.inputmethod.indic.suggestions.SuggestionStripView;
@@ -2460,6 +2461,18 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     public int getExpectedCursor() {
         return mInputLogic.mConnection.getExpectedSelectionEnd();
+    }
+
+    /** The GemType panel replaced {@code field} with {@code result}: offer the same Undo pill as the conversion pill. */
+    public void offerGemTypeUndo(final FieldText field, final CharSequence result) {
+        if (mGemTypeConvert != null) {
+            mGemTypeConvert.offerUndo(field, result);
+        }
+    }
+
+    /** Select start..end in the editor (a cursor when equal), keeping the keyboard's own cache in sync. */
+    public void setSelectionFromGemType(final int start, final int end) {
+        mInputLogic.mConnection.setSelection(start, end);
     }
 
     /** Apply a GemType result to the editor; see {@link InputLogic#replaceTextFromPanel}. */

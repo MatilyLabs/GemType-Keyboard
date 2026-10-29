@@ -45,6 +45,9 @@ object GeminiProtocol {
     fun parseResponse(status: Int, raw: String): String {
         when {
             status == 429 -> throw GeminiException(GeminiException.Kind.RATE_LIMITED)
+            // Google answers 400 FAILED_PRECONDITION from regions the API isn't offered in (VPNs get this a lot).
+            (status == 400 || status == 403) && errorMessage(raw, raw).contains("location is not supported", ignoreCase = true) ->
+                throw GeminiException(GeminiException.Kind.LOCATION_UNSUPPORTED, errorMessage(raw, "HTTP $status"))
             status == 400 || status == 403 ->
                 throw GeminiException(GeminiException.Kind.API_KEY_ERROR, errorMessage(raw, "HTTP $status"))
             status == 404 ->
