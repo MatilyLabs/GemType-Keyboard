@@ -67,7 +67,7 @@
     <string name="about_built_with">Predictive transliteration by Varnam, layouts from jquery.ime, words from Wikipedia and Olam/Alar.</string>
     <string name="about_footer">\u00A9 2026 Jishnu Mohan \u00B7 Apache License 2.0</string>
     <string name="about_open_source_licenses">Open-source licenses</string>
-    <string name="about_website_url" translatable="false">https://indic.app</string>
+    <string name="about_website_url" translatable="false">https://gemtype.matily.org</string>
     <string name="about_source_url" translatable="false">https://github.com/riponcm/GemType-Keyboard</string>
     <string name="about_contributors_url" translatable="false">https://github.com/smc/Indic-Keyboard/graphs/contributors?all=1</string>
 

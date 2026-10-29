@@ -27,12 +27,12 @@ GOVARNAM_API         ?= 21
 # ABI is the on-the-fly build target, not machine config, so it defaults here.
 ABI      ?= arm64-v8a
 
-PKG         := org.smc.inputmethod.indic
+PKG         := org.matily.gemtype.debug
 ADB         := $(ANDROID_SDK)/platform-tools/adb
 WITH_DEVICE  = serial=$$(ANDROID_HOME="$(ANDROID_SDK)" scripts/adb-device.sh) && export ANDROID_SERIAL=$$serial &&
 GRADLEW     := JAVA_HOME="$(JAVA_HOME)" ./gradlew
-DEBUG_APK   := java/build/outputs/apk/online/debug/IndicKeyboard-online-$(ABI)-debug.apk
-RELEASE_APK := java/build/outputs/apk/online/release/IndicKeyboard-online-$(ABI)-release.apk
+DEBUG_APK   := java/build/outputs/apk/online/debug/GemType-online-$(ABI)-debug.apk
+RELEASE_APK := java/build/outputs/apk/online/release/GemType-online-$(ABI)-release.apk
 
 TEST_APP_DIR := input-test-app
 TEST_APP_PKG := org.smc.inputtest
@@ -66,8 +66,8 @@ install: build ## Build and install the debug APK on a device
 run: build ## Install, make Indic Keyboard the active IME and open the app
 	@$(WITH_DEVICE) $(ADB) install -r $(DEBUG_APK) && \
 	case "$$ANDROID_SERIAL" in emulator-*) $(ADB) shell settings put secure show_ime_with_hard_keyboard 1 ;; esac && \
-	$(ADB) shell ime enable $(PKG)/.LatinIME && \
-	$(ADB) shell ime set $(PKG)/.LatinIME && \
+	$(ADB) shell ime enable $(PKG)/org.smc.inputmethod.indic.LatinIME && \
+	$(ADB) shell ime set $(PKG)/org.smc.inputmethod.indic.LatinIME && \
 	$(ADB) shell monkey -p $(PKG) -c android.intent.category.LAUNCHER 1 >/dev/null && \
 	echo "Indic Keyboard is now the active IME. Focus a text field to see it."
 
@@ -133,10 +133,10 @@ offline-release: offline-assets ## Assemble the offline release APK (signing cre
 rename-release: ## Collect release APKs into build/ as <applicationId>_v<version>-<abi>.apk
 	@found=; \
 	mkdir -p build; \
-	for f in $(RELEASE_APK_DIR)/IndicKeyboard-*-release.apk \
-			$(OFFLINE_RELEASE_APK_DIR)/IndicKeyboard-*-release.apk; do \
+	for f in $(RELEASE_APK_DIR)/GemType-*-release.apk \
+			$(OFFLINE_RELEASE_APK_DIR)/GemType-*-release.apk; do \
 		[ -f "$$f" ] || continue; found=1; \
-		abi=$$(basename "$$f"); abi=$${abi#IndicKeyboard-}; abi=$${abi%-release.apk}; \
+		abi=$$(basename "$$f"); abi=$${abi#GemType-}; abi=$${abi%-release.apk}; \
 		abi=$${abi#online-}; abi=$${abi#offline-}; \
 		ver=$$("$(AAPT2)" dump badging "$$f" 2>/dev/null | \
 			sed -n "s/.*versionName='\([^']*\)'.*/\1/p"); \
