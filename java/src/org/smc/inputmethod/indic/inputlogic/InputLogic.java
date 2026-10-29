@@ -326,6 +326,27 @@ public final class InputLogic {
     }
 
     /**
+     * Apply a result from the GemType panel: replace the selection, or the whole field (delete
+     * {@code beforeLength}/{@code afterLength} characters around the cursor first), then drop all
+     * composing and suggestion state so the keyboard carries on as if the text had been typed.
+     */
+    public void replaceTextFromPanel(final boolean wholeField, final CharSequence text,
+            final int beforeLength, final int afterLength) {
+        mConnection.beginBatchEdit();
+        resetComposingState(true /* alsoResetLastComposedWord */);
+        mConnection.finishComposingText();
+        if (wholeField) {
+            mConnection.deleteSurroundingText(beforeLength, afterLength);
+        }
+        mConnection.commitText(text, 1);
+        mConnection.endBatchEdit();
+        mSpaceState = SpaceState.NONE;
+        mAutoSpacePending = false;
+        mWordBeingCorrectedByCursor = null;
+        mSuggestedWords = SuggestedWords.getEmptyInstance();
+    }
+
+    /**
      * A suggestion was picked from the suggestion strip.
      * @param settingsValues the current values of the settings.
      * @param suggestionInfo the suggestion info.

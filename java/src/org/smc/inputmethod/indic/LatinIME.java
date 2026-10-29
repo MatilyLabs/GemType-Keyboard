@@ -71,6 +71,7 @@ import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.view.inputmethod.EditorInfoCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
@@ -914,6 +915,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void onDestroy() {
+        mKeyboardSwitcher.destroyGemType();
         mClipboardHistoryManager.stopListening();
         mDictionaryFacilitator.closeDictionaries();
         mSettings.onDestroy();
@@ -1338,6 +1340,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     }
 
     private void cleanupInternalStateForFinishInput() {
+        mKeyboardSwitcher.cancelGemTypeRequests();
         if (mEmojiSearchController != null) {
             mEmojiSearchController.reset();
         }
@@ -1496,6 +1499,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                 : ((View) visibleKeyboardView.getParent()).getPaddingBottom();
         final int suggestionsHeight = (!mKeyboardSwitcher.isShowingEmojiPalettes()
                 && !mKeyboardSwitcher.isShowingClipboardHistory()
+                && !mKeyboardSwitcher.isShowingGemTypePanel()
                 && mSuggestionStripView.getVisibility() == View.VISIBLE)
                 ? mSuggestionStripView.getHeight() : 0;
         final int searchBarHeight = (mEmojiSearchBar != null
@@ -2348,6 +2352,11 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void launchSettings() {
+        launchSettings(null /* fragmentName */);
+    }
+
+    /** Opens the settings, directly on the screen of the given fragment when it is not null. */
+    public void launchSettings(@Nullable final String fragmentName) {
         mInputLogic.commitTyped(mSettings.getCurrent(), LastComposedWord.NOT_A_SEPARATOR);
         requestHideSelf(0);
         final MainKeyboardView mainKeyboardView = mKeyboardSwitcher.getMainKeyboardView();
@@ -2359,7 +2368,42 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        if (fragmentName != null) {
+            // A running SettingsActivity would only get onNewIntent(); start a fresh one.
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.putExtra(SettingsActivity.EXTRA_SHOW_FRAGMENT, fragmentName);
+        }
         startActivityOnTheSameDisplay(intent);
+    }
+
+    // ---- GemType (see org.matily.gemtype) ----
+
+    // Called from {@link SuggestionStripView} through the {@link SuggestionStripView#Listener}
+    // interface
+    @Override
+    public void onGemTypeClicked() {
+        if (mEmojiSearchController != null && mEmojiSearchController.isActive()) {
+            return;
+        }
+        // Make the word being typed part of the committed text before GemType reads the field.
+        mInputLogic.commitTyped(mSettings.getCurrent(), LastComposedWord.NOT_A_SEPARATOR);
+        mKeyboardSwitcher.showGemTypePanel();
+    }
+
+    /** Leave the GemType panel and return to the main keyboard. */
+    public void closeGemTypePanel() {
+        if (mKeyboardSwitcher.isShowingGemTypePanel()) {
+            // Same switch back that the clipboard panel uses; it resets the keyboard state and
+            // clears the suggestion strip.
+            onCodeInput(Constants.CODE_ALPHA_FROM_CLIPBOARD, Constants.NOT_A_COORDINATE,
+                    Constants.NOT_A_COORDINATE, false /* isKeyRepeat */);
+        }
+    }
+
+    /** Apply a GemType result to the editor; see {@link InputLogic#replaceTextFromPanel}. */
+    public void replaceTextFromGemType(final boolean wholeField, final CharSequence text,
+            final int beforeLength, final int afterLength) {
+        mInputLogic.replaceTextFromPanel(wholeField, text, beforeLength, afterLength);
     }
 
     @Override

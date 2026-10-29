@@ -40,6 +40,7 @@ public final class InputView extends FrameLayout {
     private View mMainKeyboardFrame;
     private View mEmojiPalettesView;
     private ClipboardHistoryView mClipboardHistoryView;
+    private View mGemTypePanelView;
     private KeyboardTopPaddingForwarder mKeyboardTopPaddingForwarder;
     private MoreSuggestionsViewCanceler mMoreSuggestionsViewCanceler;
     private MotionEventForwarder<?, ?> mActiveForwarder;
@@ -56,6 +57,7 @@ public final class InputView extends FrameLayout {
         mMainKeyboardView = (MainKeyboardView)findViewById(R.id.keyboard_view);
         mEmojiPalettesView = findViewById(R.id.emoji_palettes_view);
         mClipboardHistoryView = (ClipboardHistoryView)findViewById(R.id.clipboard_history_view);
+        mGemTypePanelView = findViewById(R.id.gemtype_panel_view);
         mKeyboardTopPaddingForwarder = new KeyboardTopPaddingForwarder(
                 mMainKeyboardView, suggestionStripView);
         mMoreSuggestionsViewCanceler = new MoreSuggestionsViewCanceler(
@@ -119,6 +121,7 @@ public final class InputView extends FrameLayout {
         applyBottomClearance(mMainKeyboardView, gridShown ? bars.bottom : 0);
         applyBottomClearance(mMainKeyboardFrame, gridShown ? 0 : bars.bottom);
         applyBottomClearance(mEmojiPalettesView, bars.bottom);
+        applyBottomClearance(mGemTypePanelView, bars.bottom);
         if (mClipboardHistoryView != null) {
             mClipboardHistoryView.setNavigationBarInset(bars.bottom);
         }

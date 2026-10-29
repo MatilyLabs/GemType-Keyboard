@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Matily. SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- None of these preferences persist into the keyboard's SharedPreferences: GemTypeSettingsFragment
+     reads and writes them in the encrypted GemType store (the API key must never be in plain prefs). -->
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:title="@string/gemtype_settings_title"
+    android:key="screen_gemtype">
+
+    <PreferenceCategory android:title="@string/gemtype_section_key">
+        <EditTextPreference
+            android:key="gemtype_api_key"
+            android:title="@string/gemtype_api_key"
+            android:dialogTitle="@string/gemtype_api_key"
+            android:dialogMessage="@string/gemtype_api_key_dialog_message"
+            android:persistent="false" />
+        <Preference
+            android:key="gemtype_test_key"
+            android:title="@string/gemtype_test_key"
+            android:summary="@string/gemtype_test_key_summary"
+            android:persistent="false" />
+        <Preference
+            android:key="gemtype_get_key"
+            android:title="@string/gemtype_get_key"
+            android:persistent="false" />
+        <org.smc.inputmethod.indic.settings.FlatPreference
+            android:key="gemtype_free_tier_notice"
+            android:title="@string/gemtype_free_tier_notice"
+            android:layout="@layout/settings_statement"
+            android:selectable="false"
+            android:persistent="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/gemtype_section_model">
+        <ListPreference
+            android:key="gemtype_model"
+            android:title="@string/gemtype_model"
+            android:dialogTitle="@string/gemtype_model"
+            android:persistent="false"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="gemtype_custom_model"
+            android:title="@string/gemtype_model_custom_id"
+            android:dialogTitle="@string/gemtype_model_custom_id"
+            android:persistent="false"
+            app:useSimpleSummaryProvider="true" />
+        <org.smc.inputmethod.indic.settings.FlatPreference
+            android:key="gemtype_quality_hint"
+            android:title="@string/gemtype_quality_hint"
+            android:layout="@layout/settings_statement"
+            android:selectable="false"
+            android:persistent="false" />
+        <ListPreference
+            android:key="gemtype_language"
+            android:title="@string/gemtype_language"
+            android:dialogTitle="@string/gemtype_language"
+            android:persistent="false"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+</PreferenceScreen>

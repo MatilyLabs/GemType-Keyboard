@@ -34,6 +34,10 @@ import com.android.inputmethod.keyboard.emoji.EmojiSearchController;
 import com.android.inputmethod.keyboard.internal.KeyboardState;
 import com.android.inputmethod.keyboard.internal.KeyboardTextsSet;
 import com.android.inputmethod.latin.InputView;
+import org.matily.gemtype.GemType;
+import org.matily.gemtype.GemTypePanelController;
+import org.matily.gemtype.GemTypePanelView;
+import org.matily.gemtype.LatinImeGemTypeHost;
 import org.smc.inputmethod.indic.LatinIME;
 import com.android.inputmethod.latin.R;
 import com.android.inputmethod.latin.RichInputMethodManager;
@@ -59,6 +63,8 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
     private MainKeyboardView mKeyboardView;
     private EmojiPalettesView mEmojiPalettesView;
     private ClipboardHistoryView mClipboardHistoryView;
+    private GemTypePanelView mGemTypePanelView;
+    private GemTypePanelController mGemTypeController;
     private LatinIME mLatinIME;
     private RichInputMethodManager mRichImm;
     private boolean mIsHardwareAcceleratedDrawingEnabled;
@@ -153,7 +159,8 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
     }
 
     public void saveKeyboardState() {
-        if (getKeyboard() != null || isShowingEmojiPalettes() || isShowingClipboardHistory()) {
+        if (getKeyboard() != null || isShowingEmojiPalettes() || isShowingClipboardHistory()
+                || isShowingGemTypePanel()) {
             mState.onSaveKeyboardState();
         }
     }
@@ -345,7 +352,8 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
     private void setMainKeyboardFrame(
             @Nonnull final SettingsValues settingsValues,
             @Nonnull final KeyboardSwitchState toggleState) {
-        final boolean wasShowingPanel = isShowingEmojiPalettes() || isShowingClipboardHistory();
+        final boolean wasShowingPanel = isShowingEmojiPalettes() || isShowingClipboardHistory()
+                || isShowingGemTypePanel();
         // {@link #mMainKeyboardFrame} also contains the suggestion strip (see
         // main_keyboard_frame.xml), so it must stay VISIBLE here even when the hardware-keyboard
         // suppression hides {@link #mKeyboardView} alone; only setEmojiKeyboard()/
@@ -357,6 +365,7 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
         mEmojiPalettesView.stopEmojiPalettes();
         mClipboardHistoryView.setVisibility(View.GONE);
         mClipboardHistoryView.stopClipboardHistory();
+        hideGemTypePanelView();
         if (wasShowingPanel) {
             // Leaving the emoji palette or clipboard panel: drop any leftover suggestions.
             mLatinIME.clearSuggestionStrip();
@@ -375,6 +384,7 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
         // @see #getVisibleKeyboardView() and
         // @see LatinIME#onComputeInset(android.inputmethodservice.InputMethodService.Insets)
         mKeyboardView.setVisibility(View.GONE);
+        hideGemTypePanelView();
         mEmojiPalettesView.setMainKeyboardHeight(keyboard.mOccupiedHeight);
         mEmojiPalettesView.startEmojiPalettes(
                 mKeyboardTextsSet.getText(KeyboardTextsSet.SWITCH_TO_ALPHA_KEY_LABEL),
@@ -396,6 +406,7 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
         // @see #getVisibleKeyboardView() and
         // @see LatinIME#onComputeInset(android.inputmethodservice.InputMethodService.Insets)
         mKeyboardView.setVisibility(View.GONE);
+        hideGemTypePanelView();
         mEmojiPalettesView.setVisibility(View.GONE);
         mEmojiPalettesView.stopEmojiPalettes();
         mClipboardHistoryView.setTotalHeight(frameHeight > 0 ? frameHeight
@@ -404,6 +415,52 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
                                 .getDimensionPixelSize(R.dimen.config_suggestions_strip_height));
         mClipboardHistoryView.startClipboardHistory();
         mClipboardHistoryView.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Show the GemType panel in place of the keyboard, sized like the keyboard plus its suggestion
+     * strip. The panel is left again through {@link #setMainKeyboardFrame}, which every keyboard
+     * switch goes through (see LatinIME#closeGemTypePanel).
+     */
+    public void showGemTypePanel() {
+        if (!GemType.isEnabled() || mGemTypePanelView == null || mKeyboardLayoutSet == null) {
+            return;
+        }
+        final Keyboard keyboard = mKeyboardLayoutSet.getKeyboard(KeyboardId.ELEMENT_ALPHABET);
+        mMainKeyboardFrame.setVisibility(View.GONE);
+        // Keep in step with {@link #mMainKeyboardFrame}, see {@link #setEmojiKeyboard}.
+        mKeyboardView.setVisibility(View.GONE);
+        mEmojiPalettesView.setVisibility(View.GONE);
+        mEmojiPalettesView.stopEmojiPalettes();
+        mClipboardHistoryView.setVisibility(View.GONE);
+        mClipboardHistoryView.stopClipboardHistory();
+        mGemTypePanelView.setTotalHeight(keyboard.mOccupiedHeight
+                + mThemeContext.getResources()
+                        .getDimensionPixelSize(R.dimen.config_suggestions_strip_height));
+        mGemTypePanelView.setVisibility(View.VISIBLE);
+        mGemTypeController.onShown();
+    }
+
+    private void hideGemTypePanelView() {
+        if (mGemTypePanelView != null && mGemTypePanelView.getVisibility() == View.VISIBLE) {
+            mGemTypeController.onHidden();
+            mGemTypePanelView.setVisibility(View.GONE);
+        }
+    }
+
+    /** Drop any GemType request in flight (input finished). The panel itself closes on the next keyboard load. */
+    public void cancelGemTypeRequests() {
+        if (mGemTypeController != null) {
+            mGemTypeController.onHidden();
+        }
+    }
+
+    /** The service is being destroyed. */
+    public void destroyGemType() {
+        if (mGemTypeController != null) {
+            mGemTypeController.destroy();
+            mGemTypeController = null;
+        }
     }
 
     public void setEmojiSearchController(final EmojiSearchController controller) {
@@ -483,6 +540,7 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
     public KeyboardSwitchState getKeyboardSwitchState() {
         boolean hidden = !isShowingEmojiPalettes()
                 && !isShowingClipboardHistory()
+                && !isShowingGemTypePanel()
                 && (mKeyboardLayoutSet == null
                 || mKeyboardView == null
                 || !mKeyboardView.isShown());
@@ -513,6 +571,7 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
                 mEmojiPalettesView.setVisibility(View.GONE);
                 mClipboardHistoryView.stopClipboardHistory();
                 mClipboardHistoryView.setVisibility(View.GONE);
+                hideGemTypePanelView();
 
                 mMainKeyboardFrame.setVisibility(View.VISIBLE);
                 mKeyboardView.setVisibility(View.VISIBLE);
@@ -595,8 +654,12 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
         return mClipboardHistoryView != null && mClipboardHistoryView.isShown();
     }
 
+    public boolean isShowingGemTypePanel() {
+        return mGemTypePanelView != null && mGemTypePanelView.isShown();
+    }
+
     public boolean isShowingMoreKeysPanel() {
-        if (isShowingEmojiPalettes() || isShowingClipboardHistory()) {
+        if (isShowingEmojiPalettes() || isShowingClipboardHistory() || isShowingGemTypePanel()) {
             return false;
         }
         return mKeyboardView.isShowingMoreKeysPanel();
@@ -608,6 +671,9 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
         }
         if (isShowingClipboardHistory()) {
             return mClipboardHistoryView;
+        }
+        if (isShowingGemTypePanel()) {
+            return mGemTypePanelView;
         }
         return mKeyboardView;
     }
@@ -656,6 +722,11 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
                 R.id.clipboard_history_view);
         mClipboardHistoryView.setKeyboardActionListener(mLatinIME);
         mClipboardHistoryView.setOnClipboardEntryClickedListener(mLatinIME);
+        mGemTypePanelView = (GemTypePanelView) mCurrentInputView.findViewById(
+                R.id.gemtype_panel_view);
+        destroyGemType();
+        mGemTypeController = new GemTypePanelController(
+                mGemTypePanelView, new LatinImeGemTypeHost(mLatinIME));
         return mCurrentInputView;
     }
 

@@ -26,12 +26,15 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.ViewGroup
 
+import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceScreen
 import androidx.recyclerview.widget.RecyclerView
 
 import com.android.inputmethod.latin.R
 import com.android.inputmethod.latin.utils.FeedbackUtils
+
+import org.matily.gemtype.GemType
 
 @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
 class SettingsFragment : PreferenceFragmentCompat() {
@@ -41,6 +44,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
             preferenceManager.setStorageDeviceProtected()
         }
         addPreferencesFromResource(R.xml.prefs)
+        // GemType needs the network; the offline flavor has no INTERNET permission.
+        if (!GemType.isEnabled) {
+            findPreference<Preference>("group_gemtype")?.let { preferenceScreen.removePreference(it) }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

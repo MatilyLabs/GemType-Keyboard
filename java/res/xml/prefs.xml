@@ -21,6 +21,14 @@
     <org.smc.inputmethod.indic.settings.SetupStatusPreference
         android:key="setup_status" />
     <!-- Grouped into titleless cards; each PreferenceCategory renders as one rounded card. -->
+    <PreferenceCategory android:key="group_gemtype">
+        <PreferenceScreen
+            android:fragment="org.matily.gemtype.GemTypeSettingsFragment"
+            android:title="@string/gemtype_settings_title"
+            android:summary="@string/gemtype_settings_summary"
+            android:icon="@drawable/gemtype_mark"
+            android:key="screen_gemtype" />
+    </PreferenceCategory>
     <PreferenceCategory android:key="group_input">
         <PreferenceScreen
             android:fragment="org.smc.inputmethod.indic.settings.LanguageSettingsFragment"

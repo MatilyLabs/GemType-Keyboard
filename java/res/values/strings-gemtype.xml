@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Matily. SPDX-License-Identifier: AGPL-3.0-or-later -->
+<resources>
+    <string name="gemtype_title" translatable="false">GemType</string>
+
+    <!-- Suggestion strip button and panel -->
+    <string name="gemtype_strip_button_description">GemType: fix or rewrite your text</string>
+    <string name="gemtype_back_to_keyboard">Back to keyboard</string>
+    <string name="gemtype_scope_selection">Selected text</string>
+    <string name="gemtype_scope_field">Whole field</string>
+    <string name="gemtype_copy">Copy</string>
+    <string name="gemtype_replace">Replace</string>
+    <string name="gemtype_copied">Copied</string>
+    <string name="gemtype_loading">Asking Gemini…</string>
+    <string name="gemtype_try_again">Try again</string>
+    <string name="gemtype_empty_field">Type something first, then tap GemType.</string>
+    <string name="gemtype_too_long">That text is too long for GemType (limit: %1$d characters on each side of the cursor). Select a shorter part and try again.</string>
+    <string name="gemtype_no_key">Add your Gemini API key to use GemType</string>
+    <string name="gemtype_open_settings">Open GemType settings</string>
+    <string name="gemtype_text_changed">The text changed while GemType was open. Close and reopen GemType.</string>
+
+    <!-- Settings -->
+    <string name="gemtype_settings_title">GemType</string>
+    <string name="gemtype_settings_summary">Fix or rewrite what you type with Google Gemini</string>
+    <string name="gemtype_section_key">Gemini API key</string>
+    <string name="gemtype_api_key">API key</string>
+    <string name="gemtype_api_key_not_set">Not set</string>
+    <string name="gemtype_api_key_set">Saved on this device (…%1$s)</string>
+    <string name="gemtype_api_key_dialog_message">Paste the key from Google AI Studio. It is stored encrypted on this device.</string>
+    <string name="gemtype_test_key">Test key</string>
+    <string name="gemtype_test_key_summary">Send one tiny request to check the key and model</string>
+    <string name="gemtype_test_running">Testing…</string>
+    <string name="gemtype_test_ok">✓ Key works — %1$s answered in %2$s s</string>
+    <string name="gemtype_test_failed">✗ %1$s</string>
+    <string name="gemtype_test_no_key">✗ Add your Gemini API key first.</string>
+    <string name="gemtype_get_key">Get a free key at aistudio.google.com</string>
+    <string name="gemtype_free_tier_notice">Free-tier keys fall under Google\'s free-tier terms, which allow Google to use your requests to improve its products. Use a paid-tier key to opt out. Your key is stored encrypted on this device and sent only to Google.</string>
+    <string name="gemtype_section_model">Model and language</string>
+    <string name="gemtype_model">Model</string>
+    <string name="gemtype_model_custom">Custom…</string>
+    <string name="gemtype_model_custom_id">Custom model id</string>
+    <string name="gemtype_model_custom_hint">e.g. gemini-3.8-flash</string>
+    <string name="gemtype_quality_hint">3.8 Flash is often busy on free-tier keys and has a much lower free daily limit. If fixes are slow or fail, switch back to Flash-Lite.</string>
+    <string name="gemtype_language">Writing language</string>
+    <string name="gemtype_language_auto">Auto-detect (keep the text\'s language)</string>
+</resources>

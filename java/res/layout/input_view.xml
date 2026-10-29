@@ -32,4 +32,7 @@
     <include
         android:id="@+id/clipboard_history_view"
         layout="@layout/clipboard_history_view" />
+    <include
+        android:id="@+id/gemtype_panel_view"
+        layout="@layout/gemtype_panel" />
 </com.android.inputmethod.latin.InputView>

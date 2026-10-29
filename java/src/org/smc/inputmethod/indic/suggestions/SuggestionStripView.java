@@ -58,6 +58,7 @@ import com.android.inputmethod.keyboard.clipboard.ClipboardHistoryView;
 import org.smc.inputmethod.indic.InlineAutofillUtils;
 import org.smc.inputmethod.indic.clipboard.ClipboardHistoryEntry;
 import org.smc.inputmethod.indic.clipboard.ClipboardHistoryManager;
+import org.matily.gemtype.GemType;
 import org.smc.inputmethod.indic.settings.Settings;
 import org.smc.inputmethod.indic.settings.SettingsValues;
 import org.smc.inputmethod.indic.suggestions.MoreSuggestionsView.MoreSuggestionsListener;
@@ -78,6 +79,7 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         public void onCompanionToggleClicked();
         public void launchCompanionSettings();
         public void onHardwareKeyboardToggleClicked();
+        public void onGemTypeClicked();
     }
 
     static final boolean DBG = DebugFlags.DEBUG_ENABLED;
@@ -100,6 +102,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
     private boolean mInlineSuggestionsShowing;
     private boolean mToolboxOpen;
     private final ImageButton mMenuKey;
+    // GemType's far-left key (see {@link #updateGemTypeKey}); the menu key sits to its right.
+    private final ImageButton mGemTypeKey;
+    private final View mClipboardChipLeadingSpacer;
+    private boolean mGemTypeKeyVisible;
     private final View mToolboxStrip;
     private final View mToolboxRow;
     private final View mToolboxSettingsKey;
@@ -267,6 +273,9 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         mToolboxRow = findViewById(R.id.suggestions_strip_toolbox_row);
         mMenuKey = findViewById(R.id.suggestions_strip_menu_key);
         mMenuKey.setOnClickListener(this);
+        mGemTypeKey = findViewById(R.id.suggestions_strip_gemtype_key);
+        mGemTypeKey.setOnClickListener(this);
+        mClipboardChipLeadingSpacer = findViewById(R.id.clipboard_chip_leading_spacer);
         mToolboxSettingsKey = findViewById(R.id.toolbox_settings_key);
         mToolboxSettingsKey.setOnClickListener(this);
         mToolboxSettingsKey.setBackground(createToolboxButtonBackground(context));
@@ -955,6 +964,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
             toggleToolbox();
             return;
         }
+        if (view == mGemTypeKey) {
+            mListener.onGemTypeClicked();
+            return;
+        }
         if (view == mToolboxSettingsKey) {
             mListener.launchSettings();
             return;
@@ -1025,6 +1038,7 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
     // always reserved by the center strip's symmetric margins, so the center stays put regardless.
     private void updateKeys() {
         final SettingsValues currentSettingsValues = Settings.getInstance().getCurrent();
+        updateGemTypeKey(currentSettingsValues);
         final boolean grayOut = currentSettingsValues != null
                 && currentSettingsValues.mIncognitoModeEnabled
                 && currentSettingsValues.mGrayOutSuggestionsInIncognito;
@@ -1070,6 +1084,38 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         // Animate only on an actual swap (voice <-> more <-> none).
         animateRightSlotKey(mVoiceKey, rightKey == mVoiceKey);
         animateRightSlotKey(mMoreSuggestionsKey, rightKey == mMoreSuggestionsKey);
+    }
+
+    // GemType's key takes the far-left slot and pushes the menu key one slot right, so everything
+    // the left slot used to reserve space for moves with it. Hidden in password fields, in
+    // builds without GemType (offline flavor), and while the toolbox is open: the toolbox row
+    // needs all the width it had before GemType took a slot.
+    private void updateGemTypeKey(final SettingsValues settingsValues) {
+        final boolean visible = GemType.isEnabled() && settingsValues != null
+                && !settingsValues.mInputAttributes.mIsPasswordField && !mToolboxOpen;
+        if (visible == mGemTypeKeyVisible) {
+            return;
+        }
+        mGemTypeKeyVisible = visible;
+        mGemTypeKey.setVisibility(visible ? VISIBLE : GONE);
+        final int slot = getResources().getDimensionPixelSize(
+                R.dimen.config_suggestions_strip_edge_key_width);
+        final int leftInset = visible ? 2 * slot : slot;
+        setStartMargin(mSuggestionsStrip, leftInset);
+        setStartMargin(mImportantNoticeStrip, leftInset);
+        setStartMargin(mInlineSuggestionsStrip, leftInset);
+        setStartMargin(mToolboxStrip, leftInset);
+        setStartMargin(mMenuKey, visible ? slot : 0);
+        final ViewGroup.LayoutParams spacer = mClipboardChipLeadingSpacer.getLayoutParams();
+        spacer.width = leftInset;
+        mClipboardChipLeadingSpacer.setLayoutParams(spacer);
+    }
+
+    private static void setStartMargin(final View view, final int margin) {
+        final ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams)
+                view.getLayoutParams();
+        params.setMarginStart(margin);
+        view.setLayoutParams(params);
     }
 
     private void animateRightSlotKey(final View key, final boolean show) {
