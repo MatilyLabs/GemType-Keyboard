@@ -158,7 +158,14 @@ android {
         release {
             minifyEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.txt'
-            signingConfig = signingConfigs.release
+            // LOCAL TESTING ONLY: -Pgemtype.signReleaseWithDebugKey=true signs with the debug keystore so a
+            // minified build can be installed on an emulator. Off by default; never use it for a real release.
+            if (project.findProperty('gemtype.signReleaseWithDebugKey') == 'true') {
+                logger.warn('WARNING: release signed with the DEBUG key (gemtype.signReleaseWithDebugKey). Test builds only.')
+                signingConfig = signingConfigs.debug
+            } else {
+                signingConfig = signingConfigs.release
+            }
         }
     }
     androidResources {
