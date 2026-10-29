@@ -26,11 +26,12 @@
                 android:importantForAccessibility="no"
                 android:src="@mipmap/ic_launcher_round" />
 
-            <TextView
+            <org.smc.inputmethod.indic.setup.GreetingTextView
                 android:id="@+id/welcome_word"
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
                 android:layout_marginTop="24dp"
+                android:contentDescription="@string/gemtype_setup_welcome_description"
                 android:gravity="center"
                 android:maxLines="1"
                 android:textColor="?attr/colorPrimary"

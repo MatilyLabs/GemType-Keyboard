@@ -55,14 +55,14 @@
 
     <!-- Step 1: welcome. "Welcome" cycled on the first screen. -->
     <string name="gemtype_setup_welcome_subtitle">Type in 31 languages. Fix your writing with one tap.</string>
+    <string name="gemtype_setup_welcome_description">Welcome</string>
     <string name="gemtype_setup_get_started">Get started</string>
     <string-array name="gemtype_setup_greetings" translatable="false">
         <item>Welcome</item>
         <item>স্বাগতম</item>
         <item>स्वागत है</item>
         <item>خوش آمدید</item>
-        <item>வணக்கம்</item>
-        <item>ಸುಸ್ವಾಗತ</item>
+        <item>स्वागतम्</item>
     </string-array>
 
     <!-- Step 2: turn on the keyboard -->

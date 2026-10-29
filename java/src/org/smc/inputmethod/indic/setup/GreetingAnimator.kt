@@ -16,14 +16,11 @@
 
 package org.smc.inputmethod.indic.setup
 
-import android.graphics.LinearGradient
-import android.graphics.Shader
-import android.widget.TextView
-
-/** Cross-fades through the localized greetings on the welcome step, painting each with a
- *  horizontal gradient sized to the rendered text. */
+/** Cross-fades through the welcome greetings, giving each its own [GreetingStyle]. */
 internal class GreetingAnimator(
-    private val word: TextView, private val greetings: Array<String>
+    private val word: GreetingTextView,
+    private val greetings: Array<String>,
+    private val styles: List<GreetingStyle>
 ) {
     private var index = 0
     private val cycler = object : Runnable {
@@ -35,15 +32,14 @@ internal class GreetingAnimator(
     }
 
     init {
-        word.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> applyGradient() }
+        require(greetings.size == styles.size) { "one style per greeting" }
     }
 
     fun start() {
         index = 0
         word.animate().cancel()
         word.alpha = 1f
-        word.text = greetings[0]
-        applyGradient()
+        show(0)
         word.removeCallbacks(cycler)
         if (greetings.size > 1) {
             word.postDelayed(cycler, GREETING_HOLD_MS + GREETING_FADE_MS)
@@ -57,32 +53,17 @@ internal class GreetingAnimator(
 
     private fun crossFadeTo(i: Int) {
         word.animate().alpha(0f).setDuration(GREETING_FADE_MS).withEndAction {
-            word.text = greetings[i]
-            applyGradient()
+            show(i)
             word.animate().alpha(1f).setDuration(GREETING_FADE_MS).start()
         }.start()
     }
 
-    private fun applyGradient() {
-        val text = word.text
-        if (text.isNullOrEmpty() || word.width == 0) {
-            return
-        }
-        val textWidth = word.paint.measureText(text.toString())
-        if (textWidth <= 0f) {
-            return
-        }
-        val available = word.width - word.paddingLeft - word.paddingRight
-        val start = word.paddingLeft + ((available - textWidth) / 2f).coerceAtLeast(0f)
-        word.paint.shader = LinearGradient(
-            start, 0f, start + textWidth, 0f, GREETING_GRADIENT, null, Shader.TileMode.CLAMP
-        )
-        word.invalidate()
+    private fun show(i: Int) {
+        word.style = styles[i]
+        word.text = greetings[i]
     }
 
     companion object {
-        private val GREETING_GRADIENT =
-            intArrayOf(0xFF1F5FD0.toInt(), 0xFF3D8BFF.toInt(), 0xFF6FA8FF.toInt())
         private const val GREETING_HOLD_MS = 1500L
         private const val GREETING_FADE_MS = 450L
     }

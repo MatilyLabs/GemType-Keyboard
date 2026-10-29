@@ -6,13 +6,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 
 import androidx.fragment.app.Fragment
 
 import com.android.inputmethod.latin.R
 
-/** Step 1: the GemType mark and a greeting that cycles through languages. */
+/** Step 1: the GemType mark and a greeting that cycles through South Asian languages, each in its flag's colours. */
 internal class WelcomeStepFragment : Fragment() {
 
     private lateinit var greeting: GreetingAnimator
@@ -23,8 +22,11 @@ internal class WelcomeStepFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         greeting = GreetingAnimator(
-            view.findViewById<TextView>(R.id.welcome_word),
-            resources.getStringArray(R.array.gemtype_setup_greetings)
+            view.findViewById<GreetingTextView>(R.id.welcome_word),
+            resources.getStringArray(R.array.gemtype_setup_greetings),
+            GreetingStyle.cycle(
+                banglaStyleFor(phoneCountry(requireContext())), GreetingStyle.isNight(requireContext())
+            )
         )
         view.findViewById<View>(R.id.welcome_get_started).setOnClickListener {
             (requireActivity() as SetupNavigator).goNext()
