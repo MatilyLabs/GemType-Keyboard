@@ -123,11 +123,22 @@
                 android:theme="@style/Theme.IndicKeyboard.Setup"
                 android:label="@string/english_ime_name"
                 android:exported="true"
-                android:clearTaskOnLaunch="true">
+                android:clearTaskOnLaunch="true"
+                android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
+
+        <!-- "Add your Gemini API key", opened from the keyboard's GemType panel in its own task
+             so that finishing it returns to the app the user was typing in. -->
+        <activity android:name="org.smc.inputmethod.indic.setup.GemTypeKeyActivity"
+                android:theme="@style/Theme.IndicKeyboard.Setup"
+                android:label="@string/english_ime_name"
+                android:exported="false"
+                android:taskAffinity=""
+                android:excludeFromRecents="true"
+                android:windowSoftInputMode="adjustResize" />
 
         <activity android:name="org.smc.inputmethod.indic.settings.SettingsActivity"
                 android:theme="@style/Theme.IndicKeyboard.Settings"

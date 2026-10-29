@@ -37,3 +37,12 @@ object Choices {
         else -> "LOW"
     }
 }
+
+/** What a Gemini API key from Google AI Studio looks like. */
+object GeminiKey {
+    private const val PREFIX = "AIza"
+    private const val LENGTH = 39
+
+    /** True for text that is shaped like a Gemini key, so it can be tested without being asked. */
+    fun looksLikeKey(text: String): Boolean = text.length == LENGTH && text.startsWith(PREFIX)
+}

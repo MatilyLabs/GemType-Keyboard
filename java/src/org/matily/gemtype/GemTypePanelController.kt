@@ -324,7 +324,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             when (status) {
                 Status.NO_KEY -> {
                     textView.setText(R.string.gemtype_no_key)
-                    linkButton.setText(R.string.gemtype_open_settings)
+                    linkButton.setText(R.string.gemtype_add_key)
                     linkButton.visibility = View.VISIBLE
                 }
                 Status.TOO_LONG -> textView.text = context.getString(R.string.gemtype_too_long, MAX_CHARS)

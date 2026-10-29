@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Matily. SPDX-License-Identifier: AGPL-3.0-or-later -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                style="@style/GemTypeSetupTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/gemtype_setup_enable_title" />
+
+            <TextView
+                style="@style/GemTypeSetupBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/gemtype_setup_enable_intro" />
+
+            <LinearLayout
+                android:id="@+id/enable_rows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/enable_continue"
+        style="@style/GemTypeSetupPrimaryButton"
+        android:layout_marginHorizontal="24dp"
+        android:text="@string/gemtype_setup_continue" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/enable_skip"
+        style="@style/GemTypeSetupTextButton"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        android:text="@string/gemtype_setup_skip" />
+
+    <Space
+        android:id="@+id/enable_bottom_space"
+        android:layout_width="match_parent"
+        android:layout_height="20dp" />
+</LinearLayout>

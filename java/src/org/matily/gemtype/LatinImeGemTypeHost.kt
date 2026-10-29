@@ -20,5 +20,5 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : GemTypePanelController.Ho
 
     override fun closePanel() = ime.closeGemTypePanel()
 
-    override fun openSettings() = ime.launchSettings(GemType.SETTINGS_FRAGMENT)
+    override fun openSettings() = ime.launchGemTypeKeyScreen()
 }

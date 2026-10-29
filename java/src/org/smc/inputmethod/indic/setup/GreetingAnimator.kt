@@ -82,7 +82,7 @@ internal class GreetingAnimator(
 
     companion object {
         private val GREETING_GRADIENT =
-            intArrayOf(0xFF00BFA5.toInt(), 0xFF2979FF.toInt(), 0xFF7C4DFF.toInt())
+            intArrayOf(0xFF1F5FD0.toInt(), 0xFF3D8BFF.toInt(), 0xFF6FA8FF.toInt())
         private const val GREETING_HOLD_MS = 1500L
         private const val GREETING_FADE_MS = 450L
     }

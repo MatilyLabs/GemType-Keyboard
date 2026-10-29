@@ -30,14 +30,22 @@ object KeyTester {
         if (_state.value !is State.Running) _state.value = State.Idle
     }
 
-    fun run(context: Context) {
+    /**
+     * Tests the saved key, or, when [candidateKey] is given, that key instead: the first-run
+     * setup tests what the user pasted and saves it only if the request succeeds.
+     */
+    fun run(context: Context, candidateKey: String? = null) {
         if (_state.value is State.Running) return
         val appContext = context.applicationContext
         _state.value = State.Running
         GemType.appScope.launch {
             _state.value = try {
-                val config = withContext(Dispatchers.IO) { GemTypeSettings.load(appContext) }
+                val saved = withContext(Dispatchers.IO) { GemTypeSettings.load(appContext) }
+                val config = if (candidateKey == null) saved else saved.copy(apiKey = candidateKey.trim())
                 val ms = GemType.client.test(config)
+                if (candidateKey != null) {
+                    withContext(Dispatchers.IO) { GemTypeSettings.setApiKey(appContext, config.apiKey) }
+                }
                 State.Ok(config.model, ms / 1000.0)
             } catch (e: GeminiException) {
                 State.Failed(e.friendly)

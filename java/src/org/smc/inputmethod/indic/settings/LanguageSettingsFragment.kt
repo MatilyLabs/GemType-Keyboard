@@ -30,6 +30,8 @@ import com.android.inputmethod.latin.utils.KeyboardLanguages.Language
 import com.android.inputmethod.latin.utils.SubtypeLocaleUtils
 import com.android.inputmethod.latin.utils.TextDrawable
 
+import org.smc.inputmethod.indic.setup.LanguageOrder
+
 import kotlin.math.roundToInt
 
 class LanguageSettingsFragment : SubScreenFragment() {
@@ -53,9 +55,8 @@ class LanguageSettingsFragment : SubScreenFragment() {
         preferenceScreen = screen
 
         val enabledKeys = Settings.readEnabledSubtypeKeys(sharedPreferences)
-        // English-first, then case-insensitive by English name.
-        val byName = compareByDescending<Language> { it.mLocale.startsWith("en") }
-            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.mEnglishName }
+        // English, Bangla, Hindi, then the rest by English name.
+        val byName = LanguageOrder.comparator
         val (enabled, available) = KeyboardLanguages.getLanguages(context)
             .partition { isEnabled(it, enabledKeys) }
 

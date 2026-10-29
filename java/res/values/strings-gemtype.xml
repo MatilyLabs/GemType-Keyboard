@@ -16,7 +16,7 @@
     <string name="gemtype_empty_field">Type something first, then tap GemType.</string>
     <string name="gemtype_too_long">That text is too long for GemType (limit: %1$d characters on each side of the cursor). Select a shorter part and try again.</string>
     <string name="gemtype_no_key">Add your Gemini API key to use GemType</string>
-    <string name="gemtype_open_settings">Open GemType settings</string>
+    <string name="gemtype_add_key">Add API key</string>
     <string name="gemtype_text_changed">The text changed while GemType was open. Close and reopen GemType.</string>
 
     <!-- Settings -->
@@ -43,6 +43,74 @@
     <string name="gemtype_quality_hint">3.8 Flash is often busy on free-tier keys and has a much lower free daily limit. If fixes are slow or fail, switch back to Flash-Lite.</string>
     <string name="gemtype_language">Writing language</string>
     <string name="gemtype_language_auto">Auto-detect (keep the text\'s language)</string>
+
+    <!-- First-run setup -->
+    <string name="gemtype_setup_back">Back</string>
+    <string name="gemtype_setup_continue">Continue</string>
+    <string name="gemtype_setup_skip">Skip</string>
+    <string name="gemtype_setup_skip_for_now">Skip for now</string>
+    <string name="gemtype_setup_not_now">Not now</string>
+    <string name="gemtype_setup_done">Done</string>
+    <string name="gemtype_setup_step_progress">Step %1$d of %2$d</string>
+
+    <!-- Step 1: welcome. "Welcome" cycled on the first screen. -->
+    <string name="gemtype_setup_welcome_subtitle">Type in 23 languages. Fix your writing with one tap.</string>
+    <string name="gemtype_setup_get_started">Get started</string>
+    <string-array name="gemtype_setup_greetings" translatable="false">
+        <item>Welcome</item>
+        <item>স্বাগতম</item>
+        <item>स्वागत है</item>
+        <item>خوش آمدید</item>
+        <item>வணக்கம்</item>
+        <item>ಸುಸ್ವಾಗತ</item>
+    </string-array>
+
+    <!-- Step 2: turn on the keyboard -->
+    <string name="gemtype_setup_enable_title">Turn on the keyboard</string>
+    <string name="gemtype_setup_enable_intro">Android shows the same warning for every keyboard. GemType keeps your typing on your phone.</string>
+    <string name="gemtype_setup_turn_on">Turn on GemType</string>
+    <string name="gemtype_setup_turn_on_hint">Opens Android\'s keyboard settings</string>
+    <string name="gemtype_setup_switch_to">Switch to GemType</string>
+    <string name="gemtype_setup_switch_to_hint">Pick GemType in the keyboard list</string>
+    <string name="gemtype_setup_row_done">Done</string>
+
+    <!-- Step 3: languages -->
+    <string name="gemtype_setup_languages_title">Choose your languages</string>
+    <string name="gemtype_setup_languages_subtitle">Pick the languages you type in. You can change them any time in Settings.</string>
+    <string name="gemtype_setup_layout_label">Keyboard layout</string>
+    <string name="gemtype_setup_pick_a_language">Pick at least one language</string>
+    <string name="gemtype_layout_translit">Type with English letters</string>
+    <string name="gemtype_layout_translit_predictive">Type with English letters, with word suggestions</string>
+    <string name="gemtype_layout_bn_probhat">Bangla keys</string>
+    <string name="gemtype_layout_compact">Compact</string>
+
+    <!-- Step 4: connect Gemini -->
+    <string name="gemtype_setup_connect_title">Connect Gemini</string>
+    <string name="gemtype_setup_connect_body"><b>Check grammar and rewrite</b> in any app with Google\'s Gemini AI.</string>
+    <string name="gemtype_setup_connect_free">It\'s free with your Google account.</string>
+    <string name="gemtype_setup_connect_button">Connect Gemini</string>
+
+    <!-- Step 5: API key -->
+    <string name="gemtype_setup_key_title">Add your API key</string>
+    <string name="gemtype_setup_get_key">Get a free key</string>
+    <string name="gemtype_setup_get_key_hint">Sign in with Google, tap Create API key, then copy it.</string>
+    <string name="gemtype_setup_key_field">API key</string>
+    <string name="gemtype_setup_paste">Paste</string>
+    <string name="gemtype_setup_test">Test</string>
+    <string name="gemtype_setup_clipboard_empty">Nothing to paste</string>
+    <string name="gemtype_setup_key_ok">✓ Key works — saved</string>
+    <string name="gemtype_setup_key_already_saved">✓ A key is already saved</string>
+    <string name="gemtype_setup_key_privacy">Your key is stored encrypted on this phone. Your text goes to Google only when you tap GemType.</string>
+
+    <!-- Step 6: ready -->
+    <string name="gemtype_setup_ready_title">You\'re ready</string>
+    <string name="gemtype_setup_practice_label">Try it here</string>
+    <string name="gemtype_setup_practice_text" translatable="false">i has went to scool yesterday</string>
+    <string name="gemtype_setup_demo_fixed" translatable="false">I went to school yesterday.</string>
+    <string name="gemtype_setup_demo_description">Animation: tap the blue mark above the keys, then Replace, and the text is corrected.</string>
+    <string name="gemtype_setup_tip_fix">Tap the blue mark above the keys to fix your text.</string>
+    <string name="gemtype_setup_tip_globe">Switch languages with the globe key.</string>
+    <string name="gemtype_setup_tip_connect">Connect Gemini any time in Settings → GemType</string>
 
     <!-- About screen -->
     <string name="about_made_by">Made by Matily\nDeveloped by Ripon C. Malo</string>

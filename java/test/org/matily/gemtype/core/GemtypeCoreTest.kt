@@ -21,6 +21,14 @@ class GemtypeCoreTest {
         assertNull(Choices.thinkingLevel("gemma-4"))
     }
 
+    @Test fun geminiKeysAreRecognisedByShape() {
+        assertTrue(GeminiKey.looksLikeKey("AIzaMOCKkey0000000000000000000000000000"))
+        assertFalse(GeminiKey.looksLikeKey("AIza"))
+        assertFalse(GeminiKey.looksLikeKey("bad-key"))
+        assertFalse(GeminiKey.looksLikeKey("XIzaMOCKkey0000000000000000000000000000"))
+        assertFalse(GeminiKey.looksLikeKey("AIzaMOCKkey00000000000000000000000000000"))
+    }
+
     @Test fun offeredModelsExcludeRetiringOnes() {
         val ids = Choices.MODELS.map { it.first }
         assertEquals(listOf("gemini-3.5-flash-lite", "gemini-3.8-flash"), ids)

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Matily. SPDX-License-Identifier: AGPL-3.0-or-later -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingHorizontal="32dp"
+            android:paddingBottom="24dp">
+
+            <ImageView
+                android:layout_width="104dp"
+                android:layout_height="104dp"
+                android:importantForAccessibility="no"
+                android:src="@mipmap/ic_launcher_round" />
+
+            <TextView
+                android:id="@+id/welcome_word"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:maxLines="1"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                app:autoSizeMaxTextSize="64sp"
+                app:autoSizeMinTextSize="32sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
+
+            <TextView
+                style="@style/GemTypeSetupBody"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="@string/gemtype_setup_welcome_subtitle" />
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/welcome_get_started"
+        style="@style/GemTypeSetupPrimaryButton"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginBottom="24dp"
+        android:text="@string/gemtype_setup_get_started" />
+</LinearLayout>

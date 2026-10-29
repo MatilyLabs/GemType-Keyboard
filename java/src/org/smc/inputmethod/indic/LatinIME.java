@@ -139,6 +139,7 @@ import org.smc.inputmethod.indic.settings.Settings;
 import org.smc.inputmethod.indic.settings.LanguageSettingsFragment;
 import org.smc.inputmethod.indic.settings.SettingsActivity;
 import org.smc.inputmethod.indic.settings.ThemeSettingsFragment;
+import org.smc.inputmethod.indic.setup.GemTypeKeyActivity;
 import org.smc.inputmethod.indic.settings.SettingsValues;
 import org.smc.inputmethod.indic.suggestions.SuggestionStripView;
 import org.smc.inputmethod.indic.suggestions.SuggestionStripViewAccessor;
@@ -2377,6 +2378,23 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     }
 
     // ---- GemType (see org.matily.gemtype) ----
+
+    /**
+     * Opens the standalone "add your Gemini API key" screen (the key step of the first-run setup)
+     * in its own task, so finishing it returns to the app the user was typing in.
+     */
+    public void launchGemTypeKeyScreen() {
+        mInputLogic.commitTyped(mSettings.getCurrent(), LastComposedWord.NOT_A_SEPARATOR);
+        requestHideSelf(0);
+        final MainKeyboardView mainKeyboardView = mKeyboardSwitcher.getMainKeyboardView();
+        if (mainKeyboardView != null) {
+            mainKeyboardView.closing();
+        }
+        final Intent intent = new Intent();
+        intent.setClass(LatinIME.this, GemTypeKeyActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivityOnTheSameDisplay(intent);
+    }
 
     // Called from {@link SuggestionStripView} through the {@link SuggestionStripView#Listener}
     // interface
