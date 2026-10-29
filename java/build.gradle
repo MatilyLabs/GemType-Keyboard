@@ -18,7 +18,7 @@ buildscript {
 apply plugin: 'com.android.application'
 
 base {
-    archivesName = "IndicKeyboard"
+    archivesName = "GemType"
 }
 
 dependencies {
@@ -56,11 +56,14 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.smc.inputmethod.indic"
+        applicationId = "org.matily.gemtype"
         minSdk = 21
         targetSdk = 37
-        versionCode = 220
-        versionName = "4.0.1"
+        versionCode = 1
+        versionName = "1.0.0-alpha1"
+
+        // Content provider authority, derived from the applicationId (debug overrides it below).
+        resValue "string", "authority", "${applicationId}.dictionarypack"
 
         // GemType talks to Google's Gemini API. Debug builds can point at a local mock:
         //   ./gradlew assembleOnlineDebug -Pgemtype.apiBase=http://localhost:8765/v1beta/models
@@ -70,6 +73,8 @@ android {
 
     buildFeatures {
         buildConfig = true
+        // Needed for the per-variant dictionary-pack authority (resValue below).
+        resValues = true
     }
 
     // "online" is the normal build; "offline" bundles every language pack in the APK and
@@ -142,6 +147,9 @@ android {
     }
     buildTypes {
         debug {
+            // Debug installs alongside the real app (org.matily.gemtype), never over it.
+            applicationIdSuffix = ".debug"
+            resValue "string", "authority", "org.matily.gemtype.debug.dictionarypack"
             def gemtypeApiBase = project.findProperty('gemtype.apiBase')
             if (gemtypeApiBase != null) {
                 buildConfigField "String", "GEMTYPE_API_BASE", "\"${gemtypeApiBase}\""

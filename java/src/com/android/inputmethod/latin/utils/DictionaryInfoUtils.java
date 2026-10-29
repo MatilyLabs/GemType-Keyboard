@@ -53,7 +53,7 @@ import javax.annotation.Nullable;
  */
 public class DictionaryInfoUtils {
     private static final String TAG = DictionaryInfoUtils.class.getSimpleName();
-    public static final String RESOURCE_PACKAGE_NAME = "org.smc.inputmethod.indic";
+    public static final String RESOURCE_PACKAGE_NAME = com.android.inputmethod.latin.BuildConfig.APPLICATION_ID;
     private static final String DEFAULT_MAIN_DICT = "main";
     private static final String MAIN_DICT_PREFIX = "main_";
     private static final String DECODER_DICT_SUFFIX = DecoderSpecificConstants.DECODER_DICT_SUFFIX;

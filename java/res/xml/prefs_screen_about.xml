@@ -23,6 +23,12 @@
         android:key="about_header"
         app:iconSpaceReserved="false" />
 
+    <org.smc.inputmethod.indic.settings.FlatPreference
+        android:key="about_gemtype"
+        android:title="@string/about_gemtype_intro"
+        android:layout="@layout/settings_statement"
+        android:selectable="false"
+        android:persistent="false" />
     <Preference
         android:key="about_website"
         android:title="@string/about_website"

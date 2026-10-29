@@ -1,3 +1,5 @@
+GemType keyboard — a fork of Indic Keyboard with a built-in Gemini writing assistant (GemType). Licensed AGPL-3.0-or-later as a whole; original Indic Keyboard code remains Apache-2.0.
+
 ## Indic Keyboard
 
 ![icon-image](https://gitlab.com/indicproject/indic-keyboard/-/raw/master/graphic-assets/ic_launcher-playstore.png)

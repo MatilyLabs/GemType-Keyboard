@@ -20,6 +20,13 @@
     android:title="@string/about_open_source_licenses">
 
     <PreferenceCategory app:iconSpaceReserved="false">
+        <org.smc.inputmethod.indic.settings.FlatPreference android:key="lic_gemtype"
+            android:fragment="org.smc.inputmethod.indic.settings.LicenseTextFragment"
+            android:layout="@layout/settings_flat_row"
+            android:title="GemType (AGPL-3.0)" android:persistent="false">
+            <extra android:name="title" android:value="GemType (AGPL-3.0)" />
+            <extra android:name="license" android:value="agpl" />
+        </org.smc.inputmethod.indic.settings.FlatPreference>
         <org.smc.inputmethod.indic.settings.FlatPreference android:key="lic_self"
             android:fragment="org.smc.inputmethod.indic.settings.LicenseTextFragment"
             android:layout="@layout/settings_flat_row"

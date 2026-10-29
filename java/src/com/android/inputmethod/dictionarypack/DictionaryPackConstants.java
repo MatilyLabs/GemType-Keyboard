@@ -34,7 +34,7 @@ public class DictionaryPackConstants {
      * Authority for the ContentProvider protocol.
      */
     // TODO: find some way to factorize this string with the one in the resources
-    public static final String AUTHORITY = "org.smc.inputmethod.dictionarypack.aosp";
+    public static final String AUTHORITY = com.android.inputmethod.latin.BuildConfig.APPLICATION_ID + ".dictionarypack";
 
 
     /**
