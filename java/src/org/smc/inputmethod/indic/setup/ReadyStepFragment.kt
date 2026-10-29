@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import org.matily.gemtype.GemType
 import org.matily.gemtype.GemTypeSettings
 
 /**
@@ -41,6 +42,10 @@ internal class ReadyStepFragment : Fragment() {
         practice = view.findViewById(R.id.ready_practice)
         tipFix = view.findViewById(R.id.ready_tip_fix)
         tipFix.setText(R.string.gemtype_setup_tip_fix)
+        if (!GemType.isEnabled) {
+            demo.visibility = View.GONE
+            tipFix.visibility = View.GONE
+        }
         view.findViewById<View>(R.id.ready_done).setOnClickListener {
             (requireActivity() as SetupNavigator).finishSetup()
         }
@@ -51,8 +56,10 @@ internal class ReadyStepFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        demo.start()
-        showTip()
+        if (GemType.isEnabled) {
+            demo.start()
+            showTip()
+        }
         // Focus the box so the keyboard comes up; once the window has settled.
         practice.requestFocus()
         practice.postDelayed({

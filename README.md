@@ -4,7 +4,7 @@ GemType keyboard — a fork of Indic Keyboard with a built-in Gemini writing ass
 
 ![icon-image](https://gitlab.com/indicproject/indic-keyboard/-/raw/master/graphic-assets/ic_launcher-playstore.png)
 
-Indic Keyboard is a versatile keyboard for Android users who wish to type messages, compose emails and write in their own language in addition to English on their phone. You can use this application to type anywhere in your phone that you would normally type in English. It currently supports 23 languages and 54 layouts.
+Indic Keyboard is a versatile keyboard for Android users who wish to type messages, compose emails and write in their own language in addition to English on their phone. You can use this application to type anywhere in your phone that you would normally type in English. It currently supports 31 languages.
 
 ## Download
 

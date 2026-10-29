@@ -54,7 +54,7 @@
     <string name="gemtype_setup_step_progress">Step %1$d of %2$d</string>
 
     <!-- Step 1: welcome. "Welcome" cycled on the first screen. -->
-    <string name="gemtype_setup_welcome_subtitle">Type in 23 languages. Fix your writing with one tap.</string>
+    <string name="gemtype_setup_welcome_subtitle">Type in 31 languages. Fix your writing with one tap.</string>
     <string name="gemtype_setup_get_started">Get started</string>
     <string-array name="gemtype_setup_greetings" translatable="false">
         <item>Welcome</item>

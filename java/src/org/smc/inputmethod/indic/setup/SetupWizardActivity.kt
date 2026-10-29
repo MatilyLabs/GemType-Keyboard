@@ -33,6 +33,7 @@ import com.android.inputmethod.latin.R
 import com.android.inputmethod.latin.utils.UncachedInputMethodManagerUtils
 import com.google.android.material.color.MaterialColors
 
+import org.matily.gemtype.GemType
 import org.smc.inputmethod.indic.settings.SettingsActivity
 
 /**
@@ -133,7 +134,8 @@ internal class SetupWizardActivity : AppCompatActivity(), SetupNavigator, ApiKey
         when (step) {
             SetupStep.WELCOME -> goTo(SetupStep.ENABLE)
             SetupStep.ENABLE -> goTo(SetupStep.LANGUAGES)
-            SetupStep.LANGUAGES -> goTo(SetupStep.CONNECT)
+            // The offline edition has no internet, so it has no Gemini steps.
+            SetupStep.LANGUAGES -> goTo(if (GemType.isEnabled) SetupStep.CONNECT else SetupStep.READY)
             SetupStep.CONNECT -> goTo(SetupStep.KEY)
             SetupStep.KEY -> goTo(SetupStep.READY)
             SetupStep.READY -> finishSetup()
@@ -159,7 +161,13 @@ internal class SetupWizardActivity : AppCompatActivity(), SetupNavigator, ApiKey
             SetupStep.LANGUAGES -> goTo(SetupStep.ENABLE)
             SetupStep.CONNECT -> goTo(SetupStep.LANGUAGES)
             SetupStep.KEY -> goTo(SetupStep.CONNECT)
-            SetupStep.READY -> goTo(if (progress.geminiSkipped) SetupStep.CONNECT else SetupStep.KEY)
+            SetupStep.READY -> goTo(
+                when {
+                    !GemType.isEnabled -> SetupStep.LANGUAGES
+                    progress.geminiSkipped -> SetupStep.CONNECT
+                    else -> SetupStep.KEY
+                }
+            )
         }
     }
 
