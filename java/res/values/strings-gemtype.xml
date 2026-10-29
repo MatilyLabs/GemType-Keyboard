@@ -33,6 +33,11 @@
     <string name="gemtype_clip_empty">Clipboard is empty — copy some text first.</string>
     <string name="gemtype_error_generic">Something went wrong. Try again.</string>
 
+    <!-- Conversion pills in the suggestion strip -->
+    <string name="gemtype_pill_label">→ %1$s</string>
+    <string name="gemtype_pill_undo">Undo</string>
+    <string name="gemtype_pill_text_changed">The text changed, so nothing was replaced.</string>
+
     <!-- Settings -->
     <string name="gemtype_settings_title">GemType</string>
     <string name="gemtype_settings_summary">Fix or rewrite what you type with Google Gemini</string>
@@ -57,6 +62,9 @@
     <string name="gemtype_quality_hint">3.8 Flash is often busy on free-tier keys and has a much lower free daily limit. If fixes are slow or fail, switch back to Flash-Lite.</string>
     <string name="gemtype_language">Writing language</string>
     <string name="gemtype_language_auto">Auto-detect (keep the text\'s language)</string>
+    <string name="gemtype_section_keyboard">On the keyboard</string>
+    <string name="gemtype_show_convert_pill">Show conversion pill</string>
+    <string name="gemtype_show_convert_pill_summary">Offer to turn text typed in English letters into your language</string>
 
     <!-- First-run setup -->
     <string name="gemtype_setup_back">Back</string>

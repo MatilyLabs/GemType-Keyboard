@@ -247,6 +247,15 @@
         android:src="@drawable/ic_kb_menu"
         android:contentDescription="@string/suggestion_strip_toolbox_menu"
         style="?attr/suggestionWordStyle" />
+    <!-- GemType: "convert to your language" pills, right after the menu key. SuggestionStripView sets
+         the start margin and shrinks the suggestions by this view's width. -->
+    <org.matily.gemtype.ConvertPillBar
+        android:id="@+id/suggestions_strip_gemtype_pills"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:visibility="gone" />
     <!-- GemType: far-left key. SuggestionStripView shifts the menu key and the centre areas
          right by one edge-key slot while this is shown (see setGemTypeKeyVisible). -->
     <ImageButton

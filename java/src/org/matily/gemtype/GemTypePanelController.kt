@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.matily.gemtype.core.Action
 import org.matily.gemtype.core.GeminiException
+import org.matily.gemtype.core.Romanized
 
 /**
  * Drives the GemType panel: reads the field (or selection) through the
@@ -58,9 +59,15 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
         /** Share [text] (only used by [showText], when the result cannot be put back). */
         fun share(text: CharSequence) {}
+
+        /** Whether a lower-case word is valid English, or null when there is no English dictionary to ask. */
+        fun englishCheck(): ((String) -> Boolean)? = null
     }
 
-    enum class Scope { FIELD, SELECTION }
+    /** What a chip does: an [Action], plus the language (code) to write in for [Action.NATIVE]. */
+    private data class Pick(val action: Action, val language: String? = null) {
+        val label: String get() = if (language != null) Romanized.nativeName(language) else action.label
+    }
 
     private enum class Status { READY, EMPTY, NO_KEY, TOO_LONG, STALE }
 
@@ -69,12 +76,11 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private var job: Job? = null
 
     private var status = Status.EMPTY
-    private var textScope = Scope.FIELD
+    private var field: FieldText? = null
+    private var textScope = FieldText.Scope.FIELD
     private var source = ""
-    private var before = 0
-    private var after = 0
-    private var mode = Action.FIX
-    private val results = HashMap<Action, String>()
+    private var mode = Pick(Action.FIX)
+    private val results = HashMap<Pick, String>()
     private var error: String? = null
     private var loading = false
 
@@ -98,7 +104,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private val replaceButton: TextView = panel.findViewById(R.id.gemtype_panel_replace)
     private val shareButton: TextView = panel.findViewById(R.id.gemtype_panel_share)
     private val keyboardKey: ImageButton = panel.findViewById(R.id.gemtype_panel_keyboard_key)
-    private val chipViews = HashMap<Action, TextView>()
+    private val chipViews = LinkedHashMap<Pick, TextView>()
 
     // Keyboard theme attrs first; an activity theme has none of them, so fall back to Material's.
     private val surface = themeColor(R.attr.md3Surface, Color.WHITE, R.attr.colorSurface)
@@ -137,21 +143,29 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         linkButton.setOnClickListener { onLinkButton() }
         copyButton.setOnClickListener { copy() }
         replaceButton.setOnClickListener { replace() }
-        for (action in Action.entries) {
+        setChips(emptyList())
+    }
+
+    /** Chips, in order: a native-script chip per detected language, the five rewrites, then English. */
+    private fun setChips(native: List<Romanized.Match>) {
+        val picks = native.map { Pick(Action.NATIVE, it.language) } + Action.REWRITES.map { Pick(it) } + Pick(Action.ENGLISH)
+        chips.removeAllViews()
+        chipViews.clear()
+        for (item in picks) {
             val chip = TextView(context).apply {
-                text = action.label
+                text = item.label
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 gravity = Gravity.CENTER
                 minHeight = dp(34)
                 setPadding(dp(16), 0, dp(16), 0)
                 isClickable = true
                 isFocusable = true
-                setOnClickListener { pick(action) }
+                setOnClickListener { pick(item) }
             }
             chips.addView(chip, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { marginEnd = dp(6) })
-            chipViews[action] = chip
+            chipViews[item] = chip
         }
     }
 
@@ -185,11 +199,11 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         external = true
         this.canReplace = canReplace
         reset()
-        textScope = Scope.SELECTION
+        textScope = FieldText.Scope.SELECTION
         source = text
         status = when {
             text.isBlank() -> Status.EMPTY
-            text.length > MAX_CHARS -> Status.TOO_LONG
+            text.length > FieldText.MAX_CHARS -> Status.TOO_LONG
             else -> Status.READY
         }
         startFix()
@@ -202,7 +216,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         results.clear()
         error = null
         loading = false
-        mode = Action.FIX
+        mode = Pick(Action.FIX)
+        setChips(emptyList())
     }
 
     private fun startFix() {
@@ -215,8 +230,12 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         render()
         job = scope.launch {
             val hasKey = withContext(Dispatchers.IO) { GemTypeSettings.load(context).apiKey.isNotBlank() }
+            RomanizedLists.load(context)
             if (hasKey) {
-                fetch(Action.FIX)
+                // Text typed in English letters that looks like one of the user's languages: convert it first, not Fix.
+                val native = detectLanguages()
+                setChips(native)
+                fetch(native.firstOrNull()?.let { Pick(Action.NATIVE, it.language) } ?: Pick(Action.FIX))
             } else {
                 loading = false
                 status = Status.NO_KEY
@@ -241,29 +260,23 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
     /** Reads straight from the InputConnection, bypassing the keyboard's 1024-char text cache. */
     private fun readText(ic: InputConnection) {
-        val selected = ic.getSelectedText(0)?.toString()
-        if (!selected.isNullOrEmpty()) {
-            textScope = Scope.SELECTION
-            source = selected
-            status = when {
-                selected.isBlank() -> Status.EMPTY
-                selected.length > MAX_CHARS -> Status.TOO_LONG
-                else -> Status.READY
-            }
-            return
+        val read = FieldText.read(ic)
+        field = read
+        textScope = read.scope
+        source = read.text
+        status = when (read.status) {
+            FieldText.Status.READY -> Status.READY
+            FieldText.Status.EMPTY -> Status.EMPTY
+            FieldText.Status.TOO_LONG -> Status.TOO_LONG
         }
-        textScope = Scope.FIELD
-        val b = ic.getTextBeforeCursor(MAX_CHARS, 0)?.toString().orEmpty()
-        val a = ic.getTextAfterCursor(MAX_CHARS, 0)?.toString().orEmpty()
-        before = b.length
-        after = a.length
-        source = b + a
-        status = when {
-            source.isBlank() -> Status.EMPTY
-            // Replacing only part of a longer field would leave the rest behind.
-            b.length >= MAX_CHARS || a.length >= MAX_CHARS -> Status.TOO_LONG
-            else -> Status.READY
-        }
+    }
+
+    /** The user's languages that [source] seems to be written in with English letters, best first. */
+    private fun detectLanguages(): List<Romanized.Match> {
+        val lists = RomanizedLists.peek() ?: return emptyList()
+        val languages = RomanizedLists.enabledNonLatinLanguages(context)
+        val found = Romanized.detect(source.take(DETECT_CHARS), languages, lists::get, host.englishCheck())
+        return Romanized.order(found, ConvertPrefs.lastLanguage(context))
     }
 
     private fun replace() {
@@ -272,24 +285,12 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             host.replaceSelection(result)
             return
         }
-        val ic = host.inputConnection() ?: return
         // Make sure we are about to replace exactly what we sent to Gemini.
-        val stale = if (textScope == Scope.SELECTION) {
-            ic.getSelectedText(0)?.toString() != source
-        } else {
-            val b = ic.getTextBeforeCursor(MAX_CHARS, 0)?.toString().orEmpty()
-            val a = ic.getTextAfterCursor(MAX_CHARS, 0)?.toString().orEmpty()
-            before = b.length
-            after = a.length
-            b + a != source
-        }
-        if (stale) {
+        if (field?.replace(host, result) != true) {
             status = Status.STALE
             render()
             return
         }
-        if (textScope == Scope.SELECTION) host.replaceSelection(result)
-        else host.replaceField(result, before, after)
         host.closePanel()
     }
 
@@ -303,44 +304,47 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
     // ---- requests ------------------------------------------------------------------------
 
-    private fun pick(action: Action) {
+    private fun pick(pick: Pick) {
         if (status != Status.READY) return
-        mode = action
-        if (results.containsKey(action)) {
+        mode = pick
+        if (results.containsKey(pick)) {
             job?.cancel()
             loading = false
             error = null
             render()
         } else {
-            run(action)
+            run(pick)
         }
     }
 
-    private fun run(action: Action) {
+    private fun run(pick: Pick) {
         job?.cancel()
         error = null
         loading = true
-        mode = action
+        mode = pick
         render()
-        job = scope.launch { fetch(action) }
+        job = scope.launch { fetch(pick) }
     }
 
-    private suspend fun fetch(action: Action) {
-        mode = action
+    private suspend fun fetch(pick: Pick) {
+        mode = pick
         val text = source
         try {
             val config = withContext(Dispatchers.IO) { GemTypeSettings.load(context) }
-            results[action] = GemType.client.refine(text, action, config)
+            val target = pick.language?.let { Romanized.englishName(it) }
+            results[pick] = GemType.client.refine(text, pick.action, config, target)
+            // Remember which language was wanted: it is offered first next time.
+            pick.language?.let { ConvertPrefs.setLastLanguage(context, it) }
         } catch (e: GeminiException) {
-            if (mode == action) error = e.friendly
+            if (mode == pick) error = e.friendly
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            if (mode == action) error = "Something went wrong. Try again."
+            if (mode == pick) error = "Something went wrong. Try again."
         } finally {
-            if (mode == action) loading = false
+            if (mode == pick) loading = false
         }
-        if (mode == action) render()
+        if (mode == pick) render()
     }
 
     private fun onLinkButton() {
@@ -356,7 +360,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         val ready = status == Status.READY
         scopeLabel.text = when {
             !ready || external -> ""
-            textScope == Scope.SELECTION -> context.getString(R.string.gemtype_scope_selection)
+            textScope == FieldText.Scope.SELECTION -> context.getString(R.string.gemtype_scope_selection)
             else -> context.getString(R.string.gemtype_scope_field)
         }
         chipsScroll.visibility = if (ready) View.VISIBLE else View.GONE
@@ -367,7 +371,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         progress.visibility = if (ready && loading) View.VISIBLE else View.GONE
         linkButton.visibility = View.GONE
         textView.setTextColor(onSurface)
-        resultLabel.text = if (ready) mode.resultLabel else ""
+        resultLabel.text = if (ready) mode.action.resultLabel else ""
         resultLabel.visibility = if (ready) View.VISIBLE else View.GONE
 
         if (!ready) {
@@ -379,7 +383,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
                     linkButton.visibility = View.VISIBLE
                 }
                 Status.TOO_LONG -> textView.text = context.getString(
-                    if (external) R.string.gemtype_too_long_shared else R.string.gemtype_too_long, MAX_CHARS,
+                    if (external) R.string.gemtype_too_long_shared else R.string.gemtype_too_long, FieldText.MAX_CHARS,
                 )
                 Status.STALE -> textView.setText(R.string.gemtype_text_changed)
                 else -> textView.setText(R.string.gemtype_empty_field)
@@ -391,7 +395,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         val result = results[mode]
         when {
             result != null -> textView.text =
-                if (mode == Action.FIX) DiffSpans.build(source, result, diffColors) else result
+                if (mode.action == Action.FIX) DiffSpans.build(source, result, diffColors) else result
             error != null -> {
                 textView.text = error
                 textView.setTextColor(errorColor)
@@ -408,8 +412,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             button.isEnabled = enabled
             button.alpha = if (enabled) 1f else 0.4f
         }
-        for ((action, chip) in chipViews) {
-            val selected = action == mode
+        for ((pick, chip) in chipViews) {
+            val selected = pick == mode
             chip.setTextColor(if (selected) onPrimary else onSurface)
             chip.background = ripple(roundRect(if (selected) primary else functionalColor, 18f))
         }
@@ -418,32 +422,19 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
     // ---- helpers -------------------------------------------------------------------------
 
-    private fun dp(value: Int) = (value * context.resources.displayMetrics.density).toInt()
+    private fun dp(value: Int) = GemTypeUi.dp(context, value)
 
     private fun roundRect(fill: Int, radiusDp: Float, strokeColor: Int? = null): GradientDrawable =
-        GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = radiusDp * context.resources.displayMetrics.density
-            setColor(fill)
-            if (strokeColor != null) setStroke(dp(1), strokeColor)
-        }
+        GemTypeUi.roundRect(context, fill, radiusDp, strokeColor)
 
     private fun ripple(content: GradientDrawable) =
         RippleDrawable(ColorStateList.valueOf(ColorUtils.setAlphaComponent(onSurface, 0x22)), content, null)
 
-    private fun themeColor(attr: Int, fallback: Int, alt: Int = 0): Int {
-        val value = TypedValue()
-        for (a in intArrayOf(attr, alt)) {
-            if (a != 0 && context.theme.resolveAttribute(a, value, true) &&
-                value.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT
-            ) return value.data
-        }
-        return fallback
-    }
+    private fun themeColor(attr: Int, fallback: Int, alt: Int = 0): Int = GemTypeUi.themeColor(context, attr, fallback, alt)
 
     companion object {
-        /** Upper bound for text read around the cursor (each side), and for a selection. */
-        const val MAX_CHARS = 10_000
+        /** How much of the text is looked at to guess whether it is romanized (words are cheap to count, but not unlimited). */
+        private const val DETECT_CHARS = 2_000
         private const val ACCENT = 0xFF2F6FD1.toInt()
     }
 }

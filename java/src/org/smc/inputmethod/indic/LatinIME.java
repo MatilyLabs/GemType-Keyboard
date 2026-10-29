@@ -140,6 +140,8 @@ import org.smc.inputmethod.indic.settings.LanguageSettingsFragment;
 import org.smc.inputmethod.indic.settings.SettingsActivity;
 import org.smc.inputmethod.indic.settings.ThemeSettingsFragment;
 import org.smc.inputmethod.indic.setup.GemTypeKeyActivity;
+import org.matily.gemtype.ConvertController;
+import org.matily.gemtype.LatinImeGemTypeHost;
 import org.smc.inputmethod.indic.settings.SettingsValues;
 import org.smc.inputmethod.indic.suggestions.SuggestionStripView;
 import org.smc.inputmethod.indic.suggestions.SuggestionStripViewAccessor;
@@ -207,6 +209,8 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     private View mInputView;
     private InsetsUpdater mInsetsUpdater;
     private SuggestionStripView mSuggestionStripView;
+    // GemType's "convert to your language" pills in the strip; null without a strip.
+    private ConvertController mGemTypeConvert;
     private EmojiSearchController mEmojiSearchController;
     private View mEmojiSearchBar;
     private View mEmojiSuggestionStrip;
@@ -917,6 +921,10 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     @Override
     public void onDestroy() {
         mKeyboardSwitcher.destroyGemType();
+        if (mGemTypeConvert != null) {
+            mGemTypeConvert.destroy();
+            mGemTypeConvert = null;
+        }
         mClipboardHistoryManager.stopListening();
         mDictionaryFacilitator.closeDictionaries();
         mSettings.onDestroy();
@@ -1017,6 +1025,11 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         if (hasSuggestionStripView()) {
             mSuggestionStripView.setListener(this, view);
         }
+        if (mGemTypeConvert != null) {
+            mGemTypeConvert.destroy();
+        }
+        mGemTypeConvert = hasSuggestionStripView() ? new ConvertController(
+                mSuggestionStripView.getConvertPills(), new LatinImeGemTypeHost(this)) : null;
         mEmojiSearchBar = view.findViewById(R.id.emoji_search_bar);
         mEmojiSuggestionStrip = view.findViewById(R.id.emoji_suggestion_strip);
         // Keep the emoji search bar and its results strip within the same content-width cap +
@@ -1100,6 +1113,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                 mSettings.getCurrent());
         checkForTransliteration();
         loadKeyboard();
+        if (mGemTypeConvert != null) {
+            mGemTypeConvert.onSubtypeChanged();
+        }
     }
 
     void onStartInputInternal(final EditorInfo editorInfo, final boolean restarting) {
@@ -1123,6 +1139,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     void onStartInputViewInternal(final EditorInfo editorInfo, final boolean restarting) {
         super.onStartInputView(editorInfo, restarting);
 
+        if (mGemTypeConvert != null) {
+            mGemTypeConvert.onStartInput(restarting);
+        }
         mDictionaryFacilitator.onStartInput();
         // Switch to the null consumer to handle cases leading to early exit below, for which we
         // also wouldn't be consuming gesture data.
@@ -1342,6 +1361,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     private void cleanupInternalStateForFinishInput() {
         mKeyboardSwitcher.cancelGemTypeRequests();
+        if (mGemTypeConvert != null) {
+            mGemTypeConvert.onFinishInput();
+        }
         if (mEmojiSearchController != null) {
             mEmojiSearchController.reset();
         }
@@ -1361,6 +1383,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
             final int composingSpanStart, final int composingSpanEnd) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd,
                 composingSpanStart, composingSpanEnd);
+        if (mGemTypeConvert != null) {
+            mGemTypeConvert.onSelectionUpdate(newSelStart, newSelEnd);
+        }
         if (DebugFlags.DEBUG_ENABLED) {
             Log.i(TAG, "onUpdateSelection: oss=" + oldSelStart + ", ose=" + oldSelEnd
                     + ", nss=" + newSelStart + ", nse=" + newSelEnd
@@ -2416,6 +2441,25 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
             onCodeInput(Constants.CODE_ALPHA_FROM_CLIPBOARD, Constants.NOT_A_COORDINATE,
                     Constants.NOT_A_COORDINATE, false /* isKeyRepeat */);
         }
+    }
+
+    /** True while the main dictionary is English, so {@link #isValidSpellingWord} can tell English words. */
+    public boolean isEnglishDictionaryActive() {
+        return mDictionaryFacilitator.isActive()
+                && "en".equals(mDictionaryFacilitator.getLocale().getLanguage());
+    }
+
+    public boolean isValidSpellingWord(final String word) {
+        return mDictionaryFacilitator.isValidSpellingWord(word);
+    }
+
+    /** Text before the cursor from the keyboard's own cache (no round trip to the app). */
+    public CharSequence getTextBeforeCursorFromCache(final int n) {
+        return mInputLogic.mConnection.getTextBeforeCursor(n, 0);
+    }
+
+    public int getExpectedCursor() {
+        return mInputLogic.mConnection.getExpectedSelectionEnd();
     }
 
     /** Apply a GemType result to the editor; see {@link InputLogic#replaceTextFromPanel}. */

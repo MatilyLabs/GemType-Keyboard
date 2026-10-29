@@ -131,8 +131,8 @@ internal class ClipboardFixActivity : AppCompatActivity() {
                         finish()
                     }
                     original == null -> return@launch show(getString(R.string.gemtype_clip_empty))
-                    original.length > GemTypePanelController.MAX_CHARS ->
-                        return@launch show(getString(R.string.gemtype_too_long_shared, GemTypePanelController.MAX_CHARS))
+                    original.length > FieldText.MAX_CHARS ->
+                        return@launch show(getString(R.string.gemtype_too_long_shared, FieldText.MAX_CHARS))
                 }
                 val fixed = GemType.client.refine(original!!, Action.FIX, config)
                 clipboard.setPrimaryClip(ClipData.newPlainText("GemType", fixed))

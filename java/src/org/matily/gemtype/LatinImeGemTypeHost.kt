@@ -3,11 +3,13 @@
 package org.matily.gemtype
 
 import android.view.inputmethod.InputConnection
+import com.android.inputmethod.latin.RichInputMethodManager
+import org.matily.gemtype.core.Romanized
 import org.smc.inputmethod.indic.LatinIME
 import org.smc.inputmethod.indic.settings.Settings
 
-/** Connects the GemType panel to the keyboard service. */
-class LatinImeGemTypeHost(private val ime: LatinIME) : GemTypePanelController.Host {
+/** Connects the GemType panel and the conversion pills to the keyboard service. */
+class LatinImeGemTypeHost(private val ime: LatinIME) : ConvertController.Host {
     override fun inputConnection(): InputConnection? = ime.currentInputConnection
 
     override fun isPasswordField(): Boolean =
@@ -21,4 +23,21 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : GemTypePanelController.Ho
     override fun closePanel() = ime.closeGemTypePanel()
 
     override fun openSettings() = ime.launchGemTypeKeyScreen()
+
+    // The keyboard's dictionary knows English words only while an English keyboard is active.
+    override fun englishCheck(): ((String) -> Boolean)? =
+        if (ime.isEnglishDictionaryActive) ime::isValidSpellingWord else null
+
+    override fun textBeforeCursor(n: Int): CharSequence = ime.getTextBeforeCursorFromCache(n)
+
+    override fun cursor(): Int = ime.expectedCursor
+
+    // A keyboard that types a non-Latin language, or transliterates by itself (Avro...), needs no pill.
+    override fun isLatinKeyboard(): Boolean {
+        val subtype = RichInputMethodManager.getInstance().currentSubtype
+        return subtype.locale.language !in Romanized.NON_LATIN &&
+            subtype.getExtraValueOf("TransliterationMethod").isNullOrEmpty()
+    }
+
+    override fun clearSuggestions() = ime.setNeutralSuggestionStrip()
 }

@@ -58,6 +58,7 @@ import com.android.inputmethod.keyboard.clipboard.ClipboardHistoryView;
 import org.smc.inputmethod.indic.InlineAutofillUtils;
 import org.smc.inputmethod.indic.clipboard.ClipboardHistoryEntry;
 import org.smc.inputmethod.indic.clipboard.ClipboardHistoryManager;
+import org.matily.gemtype.ConvertPillBar;
 import org.matily.gemtype.GemType;
 import org.smc.inputmethod.indic.settings.Settings;
 import org.smc.inputmethod.indic.settings.SettingsValues;
@@ -106,6 +107,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
     private final ImageButton mGemTypeKey;
     private final View mClipboardChipLeadingSpacer;
     private boolean mGemTypeKeyVisible;
+    // GemType's "convert to your language" pills, right after the menu key; the suggestions make
+    // room for them (see {@link #updateConvertPillsInset}).
+    private final ConvertPillBar mConvertPills;
+    private int mLeftInset;
     private final View mToolboxStrip;
     private final View mToolboxRow;
     private final View mToolboxSettingsKey;
@@ -275,6 +280,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         mMenuKey.setOnClickListener(this);
         mGemTypeKey = findViewById(R.id.suggestions_strip_gemtype_key);
         mGemTypeKey.setOnClickListener(this);
+        mConvertPills = findViewById(R.id.suggestions_strip_gemtype_pills);
+        mLeftInset = getResources().getDimensionPixelSize(
+                R.dimen.config_suggestions_strip_edge_key_width);
+        mConvertPills.setOnWidthChanged(this::updateConvertPillsInset);
         mClipboardChipLeadingSpacer = findViewById(R.id.clipboard_chip_leading_spacer);
         mToolboxSettingsKey = findViewById(R.id.toolbox_settings_key);
         mToolboxSettingsKey.setOnClickListener(this);
@@ -340,6 +349,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         mMoreSuggestionsKey.setOnClickListener(this);
 
         ((android.widget.ImageView) mClipboardChipOpenHistory).setImageDrawable(iconMore);
+    }
+
+    public ConvertPillBar getConvertPills() {
+        return mConvertPills;
     }
 
     /**
@@ -1101,14 +1114,48 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         final int slot = getResources().getDimensionPixelSize(
                 R.dimen.config_suggestions_strip_edge_key_width);
         final int leftInset = visible ? 2 * slot : slot;
-        setStartMargin(mSuggestionsStrip, leftInset);
-        setStartMargin(mImportantNoticeStrip, leftInset);
-        setStartMargin(mInlineSuggestionsStrip, leftInset);
+        mLeftInset = leftInset;
+        setStartMargin(mConvertPills, leftInset);
         setStartMargin(mToolboxStrip, leftInset);
         setStartMargin(mMenuKey, visible ? slot : 0);
+        mConvertPills.setSuppressed(!visible);
+        updateConvertPillsInset();
+    }
+
+    // The pills sit between the menu key and the suggestions: everything that fills the strip's
+    // centre starts after them, and the words are laid out again once the new width is known
+    // (they are ellipsized to the old one).
+    private void updateConvertPillsInset() {
+        final int inset = mLeftInset + mConvertPills.getOccupiedWidth();
+        final ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams)
+                mSuggestionsStrip.getLayoutParams();
+        if (params.getMarginStart() == inset) {
+            return;
+        }
+        setStartMargin(mSuggestionsStrip, inset);
+        setStartMargin(mImportantNoticeStrip, inset);
+        setStartMargin(mInlineSuggestionsStrip, inset);
         final ViewGroup.LayoutParams spacer = mClipboardChipLeadingSpacer.getLayoutParams();
-        spacer.width = leftInset;
+        spacer.width = inset;
         mClipboardChipLeadingSpacer.setLayoutParams(spacer);
+        mSuggestionsStrip.addOnLayoutChangeListener(new OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(final View v, final int l, final int t, final int r,
+                    final int b, final int ol, final int ot, final int or, final int ob) {
+                mSuggestionsStrip.removeOnLayoutChangeListener(this);
+                mSuggestionsStrip.post(SuggestionStripView.this::layoutSuggestionsAgain);
+            }
+        });
+    }
+
+    private void layoutSuggestionsAgain() {
+        if (mSuggestionsStrip.getChildCount() == 0) {
+            return;
+        }
+        mSuggestionsStrip.removeAllViews();
+        mStartIndexOfMoreSuggestions = mLayoutHelper.layoutAndReturnStartIndexOfMoreSuggestions(
+                getContext(), mSuggestedWords, mSuggestionsStrip, this);
+        updateKeys();
     }
 
     private static void setStartMargin(final View view, final int margin) {
