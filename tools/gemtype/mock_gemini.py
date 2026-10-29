@@ -9,10 +9,14 @@ without a real API key. Debug builds only:
 Each request body is printed so you can check what the app sends (the key
 itself is never printed). Replies use the same structured-JSON shape the app
 asks Gemini for: {"rewritten": "..."}. Failure cases for the Test key button:
+"native script" prompts -> a fixed sentence in the language named in the prompt, "Translate" -> English;
 key "bad-key" -> 400 invalid key; any model id not starting "gemini-3" -> 404.
+MOCK_DELAY=2 python3 tools/gemtype/mock_gemini.py answers after 2 s (to see spinners).
 """
 import json
+import os
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # Canned rewrites keyed by the first words of each action's prompt.
@@ -25,6 +29,13 @@ DEMO = {
 }
 
 
+# "Native script" requests name the language in the system prompt ("The text is Bangla written ...").
+NATIVE = {
+    "bangla": "আমি কাল আসবো না।", "bengali": "আমি কাল আসবো না।",
+    "hindi": "मैं कल आऊँगा।", "urdu": "میں کل آؤں گا۔", "nepali": "म भोलि आउँछु।",
+    "tamil": "நான் நாளை வருவேன்.", "telugu": "నేను రేపు వస్తాను.",
+}
+
 # A few typos to repair so the Fix diff has something to show.
 TYPOS = {"Ths": "This", "tst": "test", "teh": "the", "recieve": "receive"}
 
@@ -35,6 +46,7 @@ class Handler(BaseHTTPRequestHandler):
         key = self.headers.get("x-goog-api-key", "")
         print(f"\n{self.path}  key={'set' if key else 'MISSING'}", flush=True)
         print(json.dumps(body, indent=2, ensure_ascii=False), flush=True)
+        time.sleep(float(os.environ.get("MOCK_DELAY", "0")))
         if not key or key == "bad-key":
             return self.reply(400, {"error": {"message": "API key not valid. Please pass a valid API key."}})
         model = self.path.split("/models/")[-1].split(":")[0]
@@ -43,6 +55,11 @@ class Handler(BaseHTTPRequestHandler):
         system = body["systemInstruction"]["parts"][0]["text"]
         text = body["contents"][0]["parts"][0]["text"].removeprefix("TEXT:\n")
         out = next((v for k, v in DEMO.items() if system.startswith(k)), text)
+        if "native script" in system:
+            language = system.split("The text is ")[1].split(" written")[0].lower()
+            out = NATIVE.get(language, "[" + language + "] " + text)
+        elif system.startswith("Translate"):
+            out = "I will not come tomorrow."
         if system.startswith("Fix all") and "friday" not in text.lower():
             out = text[:1].upper() + text[1:].replace(" i ", " I ").replace("dont", "don't").rstrip(".") + "."
             for typo, fix in TYPOS.items():

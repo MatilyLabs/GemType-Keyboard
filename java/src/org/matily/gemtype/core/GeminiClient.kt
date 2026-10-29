@@ -10,17 +10,17 @@ import kotlinx.coroutines.delay
  */
 class GeminiClient(private val transport: Transport) {
 
-    /** Rewrite [text] with [action]. Returns the rewritten string. */
-    suspend fun refine(text: String, action: Action, config: GemtypeConfig): String {
+    /** Rewrite [text] with [action]. Returns the rewritten string. [target] is the language's English name for [Action.NATIVE]. */
+    suspend fun refine(text: String, action: Action, config: GemtypeConfig, target: String? = null): String {
         if (config.apiKey.isBlank()) throw GeminiException(GeminiException.Kind.NO_API_KEY)
         val level = Choices.thinkingLevel(config.model)
         return try {
-            callWithRetry(text, action, config, level)
+            callWithRetry(text, action, config, level, target)
         } catch (e: GeminiException) {
             // A custom model id may not accept our thinking level; retry once without it.
             if (level != null && e.kind == GeminiException.Kind.API_KEY_ERROR &&
                 e.message.orEmpty().contains("thinking", ignoreCase = true)
-            ) call(text, action, config, null) else throw e
+            ) call(text, action, config, null, target) else throw e
         }
     }
 
@@ -36,17 +36,21 @@ class GeminiClient(private val transport: Transport) {
     }
 
     /** Google returns 5xx when a model is overloaded; one quick retry usually lands. */
-    private suspend fun callWithRetry(text: String, action: Action, config: GemtypeConfig, level: String?): String =
+    private suspend fun callWithRetry(
+        text: String, action: Action, config: GemtypeConfig, level: String?, target: String?,
+    ): String =
         try {
-            call(text, action, config, level)
+            call(text, action, config, level, target)
         } catch (e: GeminiException) {
             if (e.kind != GeminiException.Kind.BUSY) throw e
             delay(1_500)
-            call(text, action, config, level)
+            call(text, action, config, level, target)
         }
 
-    private suspend fun call(text: String, action: Action, config: GemtypeConfig, level: String?): String {
-        val body = GeminiProtocol.requestBody(text, action, config.language, level).toString()
+    private suspend fun call(
+        text: String, action: Action, config: GemtypeConfig, level: String?, target: String?,
+    ): String {
+        val body = GeminiProtocol.requestBody(text, action, config.language, level, target).toString()
         val result = transport.post(config.model, config.apiKey, body)
         return GeminiProtocol.parseResponse(result.status, result.body)
     }

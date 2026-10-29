@@ -101,6 +101,63 @@ class GemtypeCoreTest {
         assertTrue(system.contains("The text is in Hindi"))
     }
 
+    // ---- native script / English actions ---------------------------------------------------
+
+    private fun systemOf(body: JSONObject) =
+        body.getJSONObject("systemInstruction").getJSONArray("parts").getJSONObject(0).getString("text")
+
+    @Test fun nativeScriptPromptNamesTheTargetLanguage() {
+        val body = GeminiProtocol.requestBody("ami kal ashbo na", Action.NATIVE, "auto", "MINIMAL", "Bangla")
+        val system = systemOf(body)
+        assertTrue(system.startsWith("The text is Bangla written with English (Latin) letters, possibly mixed with English words."))
+        assertTrue(system.contains("Rewrite it in Bangla using its native script with correct, natural spelling and punctuation."))
+        assertTrue(system.contains("Do not translate it into another language or change its meaning."))
+        assertTrue(system.contains("Keep names, brands, URLs, numbers, emoji and words normally written in English as they are."))
+        assertTrue(system.endsWith("Return only the resulting text — no preamble, no quotes, no markdown."))
+        assertFalse(system.contains("{language}"))
+        // It changes the script on purpose: no "keep the language" line.
+        assertFalse(system.contains("Preserve the language"))
+        assertFalse(system.contains("keep it in that language"))
+        assertFalse(GeminiProtocol.systemPrompt(Action.NATIVE, "Hindi", "Urdu").contains("The text is in Hindi"))
+        // Same schema, low thinking level and plain-text input as the other actions.
+        val gen = body.getJSONObject("generationConfig")
+        assertEquals("MINIMAL", gen.getJSONObject("thinkingConfig").getString("thinkingLevel"))
+        assertEquals("application/json", gen.getString("responseMimeType"))
+        assertEquals("rewritten", gen.getJSONObject("responseSchema").getJSONArray("required").getString(0))
+        assertEquals(0.0, gen.getDouble("temperature"), 0.0)
+        val text = body.getJSONArray("contents").getJSONObject(0).getJSONArray("parts").getJSONObject(0).getString("text")
+        assertEquals("TEXT:\nami kal ashbo na", text)
+    }
+
+    @Test fun translateToEnglishPrompt() {
+        val system = systemOf(GeminiProtocol.requestBody("ami kal ashbo na", Action.ENGLISH, "Hindi", "LOW", "ignored"))
+        assertEquals(
+            "Translate the text into natural, fluent English. Keep names, URLs, numbers and emoji. " +
+                "Return only the resulting text — no preamble, no quotes, no markdown.",
+            system,
+        )
+        assertEquals(0.4, GeminiProtocol.requestBody("x", Action.ENGLISH, "auto", null)
+            .getJSONObject("generationConfig").getDouble("temperature"), 0.0)
+    }
+
+    @Test fun otherActionsAreUnchangedByTheTargetParameter() {
+        assertEquals(
+            GeminiProtocol.systemPrompt(Action.FIX, "auto"),
+            GeminiProtocol.systemPrompt(Action.FIX, "auto", "Bangla"),
+        )
+        assertEquals(listOf(Action.FIX, Action.IMPROVE, Action.SHORTEN, Action.FORMAL, Action.CASUAL), Action.REWRITES)
+    }
+
+    @Test fun refinePassesTheTargetLanguageToGemini() {
+        val bodies = ArrayList<JSONObject>()
+        val client = GeminiClient { _, _, body ->
+            bodies.add(JSONObject(body))
+            HttpResult(200, ok("{\"rewritten\":\"আমি কাল আসবো না\"}"))
+        }
+        assertEquals("আমি কাল আসবো না", runBlocking { client.refine("ami kal ashbo na", Action.NATIVE, config, "Bangla") })
+        assertTrue(systemOf(bodies.single()).contains("Rewrite it in Bangla"))
+    }
+
     private fun ok(text: String) = JSONObject().put(
         "candidates",
         org.json.JSONArray().put(

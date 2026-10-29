@@ -1,0 +1,12 @@
+# Sanskrit as typed with English letters (IAST without diacritics, and plain). Common English words are left out.
+namah namaste aham tvam etat idam iti ca api eva atha tatha yatha yada tada yatra tatra atra
+kutra kim kah kaa kada katham kasmat kena kasya kasmai kati asmi asti santi aasit aasan bhavati bhavanti
+bhavatu bhavet gacchati gacchami gacchanti gacchatu aagacchati aagacchami aagatah aagatam pashyati pashyami
+pashya shrunu shrnoti vadati vadami vada vadanti jaanaami jaanati janaami janati jnana gyana dharma karma moksha
+mokshah yoga yogah atman aatma brahma brahman paramatma ishvara ishwar bhagavan bhagavad gita geeta shloka
+slokah mantra mantrah veda vedah upanishad purana ramayana mahabharata shanti shantih aum swaha svaha
+tathaastu subhashitam subhashita vidya vidyaa gurave shishya shishyah putra putri maata pita bhratah
+bhratri mitra mitram dhanyavaad dhanyavadah svagatam swagatam kripaya kshama kshamyataam shubham shubha
+shubhaa mangalam mangala jayatu jaya jayatu vijayi bhavatu ayushman sukham sukhi duhkham duhkha sarvam sarve
+sarvesham asmaakam yushmaakam mama tava tasya tasyaah asya yasya yat yaa tvaya mayaa tena taih
+ahamapi tvamapi etasmin tasmin yasmin

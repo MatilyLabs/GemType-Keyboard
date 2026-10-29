@@ -14,24 +14,27 @@ object GeminiProtocol {
             .put("required", JSONArray().put("rewritten"))
     }
 
-    fun systemPrompt(action: Action, language: String): String {
-        val lang = if (language == Choices.AUTO_LANGUAGE) {
-            "Preserve the language of the original text."
-        } else {
-            "The text is in $language; keep it in that language."
+    /** [target] is the language's English name; only [Action.NATIVE] uses it. */
+    fun systemPrompt(action: Action, language: String, target: String? = null): String {
+        val lang = when {
+            action.changesLanguage -> ""
+            language == Choices.AUTO_LANGUAGE -> " Preserve the language of the original text."
+            else -> " The text is in $language; keep it in that language."
         }
-        return "${action.prompt} $lang Return only the resulting text — no preamble, no quotes, no markdown."
+        return "${action.prompt(target)}$lang Return only the resulting text — no preamble, no quotes, no markdown."
     }
 
-    fun requestBody(text: String, action: Action, language: String, thinkingLevel: String?): JSONObject {
+    fun requestBody(
+        text: String, action: Action, language: String, thinkingLevel: String?, target: String? = null,
+    ): JSONObject {
         val gen = JSONObject()
-            .put("temperature", if (action == Action.FIX) 0 else 0.4)
+            .put("temperature", if (action == Action.FIX || action == Action.NATIVE) 0 else 0.4)
             .put("responseMimeType", "application/json")
             .put("responseSchema", REFINE_SCHEMA)
         if (thinkingLevel != null) gen.put("thinkingConfig", JSONObject().put("thinkingLevel", thinkingLevel))
         return JSONObject()
             .put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", "TEXT:\n$text")))))
-            .put("systemInstruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", systemPrompt(action, language)))))
+            .put("systemInstruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", systemPrompt(action, language, target)))))
             .put("generationConfig", gen)
     }
 
