@@ -49,6 +49,7 @@
         android:key="about_contact"
         android:title="@string/about_contact"
         android:summary="@string/about_contact_email"
+        android:icon="@drawable/gemtype_ic_settings_mail"
         android:persistent="false" />
 
     <org.smc.inputmethod.indic.settings.FlatPreference
