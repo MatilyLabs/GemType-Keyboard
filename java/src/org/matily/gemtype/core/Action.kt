@@ -2,32 +2,36 @@
 
 package org.matily.gemtype.core
 
+/** Style rules shared by the five rewrites. */
+private const val NATURAL =
+    "Write it the way a fluent native speaker would write this kind of message (chat or email): natural, conversational where the text is casual, never stiff. " +
+        "Add nothing new. Keep names, URLs, numbers, emoji and line breaks, and keep English words in text that mixes languages."
+
 /**
- * What GemType can do to a piece of text. The prompts mirror the other GemType
- * surfaces (browser extension, Android app) so results are consistent.
+ * What GemType can do to a piece of text. [prompt] is the system prompt for text in its own script;
+ * [layeredTask] is the same job as one step of the romanized-text request (see [GeminiProtocol]).
  */
-enum class Action(val label: String, val resultLabel: String, val prompt: String) {
+enum class Action(val label: String, val resultLabel: String, val prompt: String, val layeredTask: String = prompt) {
     FIX(
         "Fix", "Suggested fix",
-        "Correct the grammar, spelling and punctuation of the text, and fix clearly awkward or unnatural phrasing so it reads naturally to a native speaker. " +
-            "Keep the meaning, tone and length, and keep the writer's own words where they are already fine. " +
-            "In text that mixes languages, keep the English words as they are. Keep the script and formatting of the text.",
+        "Fix the grammar, spelling and punctuation, and any clearly awkward wording. " +
+            "Change as little as you can: keep the writer's own words, tone and length where they are already fine. $NATURAL",
     ),
     IMPROVE(
         "Improve", "Improved",
-        "Rewrite the text to be clearer and better written. Keep the meaning, tone, and approximate length.",
+        "Make the text clearer and more natural, at about the same length. Keep the writer's tone and intent. $NATURAL",
     ),
     SHORTEN(
         "Shorten", "Shorter",
-        "Rewrite the text to be significantly more concise while keeping all key information.",
+        "Make the text much shorter while keeping every key point and the writer's tone. $NATURAL",
     ),
     FORMAL(
         "Formal", "More formal",
-        "Rewrite the text in a professional, formal tone suitable for business communication.",
+        "Make the text polite and professional, suited to a work email, keeping the writer's intent. $NATURAL",
     ),
     CASUAL(
         "Casual", "More casual",
-        "Rewrite the text in a friendly, casual, conversational tone.",
+        "Make the text friendly and relaxed, the way people chat with friends, keeping the writer's intent. $NATURAL",
     ),
 
     /** Text typed with English letters -> its own language in its native script; `{language}` is filled in by [prompt]. */
@@ -41,10 +45,13 @@ enum class Action(val label: String, val resultLabel: String, val prompt: String
     ),
     ENGLISH(
         "English", "In English",
-        "The text may be in any language or a mix, in any script including English letters (romanized), with typos and broken grammar. " +
-            "Work out what the writer means, then write it as correct, natural, fluent English with the same meaning and tone. " +
-            "Do not add anything. Keep names, URLs, numbers and emoji.",
-        );
+        "The text may be in any language or a mix, in any script including English letters (romanized), with typos and short chat forms. " +
+            "Work out what the writer means, reading short forms in the writer's own language (a Banglish \"tmr\" is \"your\", not \"tomorrow\"), " +
+            "then write it as natural, fluent English, the way a native speaker would say it in that kind of message. " +
+            "Keep the meaning and tone, add nothing, and keep names, URLs, numbers and emoji.",
+        "Write what the writer means as natural, fluent English, the way a native speaker would say it in that kind of message. " +
+            "Keep the meaning and tone, add nothing, and keep names, URLs, numbers and emoji.",
+    );
 
     /** These two change the language on purpose, so the "keep the text's language" line is left out of their request. */
     val changesLanguage: Boolean get() = this == NATIVE || this == ENGLISH

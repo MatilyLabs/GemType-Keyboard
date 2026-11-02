@@ -21,6 +21,13 @@ class GemtypeCoreTest {
         assertNull(Choices.thinkingLevel("gemma-4"))
     }
 
+    @Test fun rewritesThinkAtMediumOnGemini3Only() {
+        assertEquals("MEDIUM", Choices.rewriteThinkingLevel(Choices.DEFAULT_MODEL))
+        assertEquals("MEDIUM", Choices.rewriteThinkingLevel(Choices.QUALITY_MODEL))
+        assertNull(Choices.rewriteThinkingLevel("gemini-2.0-flash"))
+        assertNull(Choices.rewriteThinkingLevel("gemma-4"))
+    }
+
     @Test fun geminiKeysAreRecognisedByShape() {
         assertTrue(GeminiKey.looksLikeKey("AIzaMOCKkey0000000000000000000000000000"))
         assertFalse(GeminiKey.looksLikeKey("AIza"))
@@ -84,7 +91,7 @@ class GemtypeCoreTest {
     @Test fun requestBodyUsesTheActionPromptAndThinkingLevel() {
         val body = GeminiProtocol.requestBody("hello", Action.FIX, "auto", "MINIMAL")
         val system = body.getJSONObject("systemInstruction").getJSONArray("parts").getJSONObject(0).getString("text")
-        assertTrue(system.startsWith("Correct the grammar, spelling and punctuation"))
+        assertTrue(system.startsWith("Fix the grammar, spelling and punctuation"))
         assertTrue(system.contains("Preserve the language"))
         val gen = body.getJSONObject("generationConfig")
         assertEquals("MINIMAL", gen.getJSONObject("thinkingConfig").getString("thinkingLevel"))
@@ -131,11 +138,12 @@ class GemtypeCoreTest {
     }
 
     @Test fun translateToEnglishPrompt() {
-        val system = systemOf(GeminiProtocol.requestBody("ami kal ashbo na", Action.ENGLISH, "Hindi", "LOW", "ignored"))
+        val system = systemOf(GeminiProtocol.requestBody("ami kal ashbo na", Action.ENGLISH, "Hindi", "LOW"))
         assertEquals(
-            "The text may be in any language or a mix, in any script including English letters (romanized), with typos and broken grammar. " +
-                "Work out what the writer means, then write it as correct, natural, fluent English with the same meaning and tone. " +
-                "Do not add anything. Keep names, URLs, numbers and emoji. " +
+            "The text may be in any language or a mix, in any script including English letters (romanized), with typos and short chat forms. " +
+                "Work out what the writer means, reading short forms in the writer's own language (a Banglish \"tmr\" is \"your\", not \"tomorrow\"), " +
+                "then write it as natural, fluent English, the way a native speaker would say it in that kind of message. " +
+                "Keep the meaning and tone, add nothing, and keep names, URLs, numbers and emoji. " +
                 "Return only the resulting text — no preamble, no quotes, no markdown.",
             system,
         )
@@ -143,12 +151,26 @@ class GemtypeCoreTest {
             .getJSONObject("generationConfig").getDouble("temperature"), 0.0)
     }
 
-    @Test fun otherActionsAreUnchangedByTheTargetParameter() {
-        assertEquals(
-            GeminiProtocol.systemPrompt(Action.FIX, "auto"),
-            GeminiProtocol.systemPrompt(Action.FIX, "auto", "Bangla"),
-        )
-        assertEquals(listOf(Action.FIX, Action.IMPROVE, Action.SHORTEN, Action.FORMAL, Action.CASUAL), Action.REWRITES)
+    @Test fun rewritePromptsSoundNaturalAndKeepTheLanguage() {
+        for (action in Action.REWRITES) {
+            val system = GeminiProtocol.systemPrompt(action, "auto")
+            assertTrue("$action", system.contains("fluent native speaker"))
+            assertTrue("$action", system.contains("Add nothing new"))
+            assertTrue("$action", system.contains("Keep names, URLs, numbers, emoji and line breaks"))
+            assertTrue("$action", system.contains("keep English words in text that mixes languages"))
+            assertTrue("$action", system.contains("Preserve the language and script of the original text."))
+            assertTrue("$action", system.endsWith("Return only the resulting text — no preamble, no quotes, no markdown."))
+        }
+        assertTrue(GeminiProtocol.systemPrompt(Action.IMPROVE, "auto").startsWith("Make the text clearer and more natural, at about the same length."))
+        assertTrue(GeminiProtocol.systemPrompt(Action.FORMAL, "Hindi").contains("The text is in Hindi; keep it in that language and script."))
+    }
+
+    @Test fun withoutATargetEveryActionUsesTheSingleFieldSchema() {
+        for (action in Action.values()) {
+            val schema = GeminiProtocol.requestBody("x", action, "auto", null).getJSONObject("generationConfig").getJSONObject("responseSchema")
+            assertEquals(listOf("rewritten"), schema.getJSONObject("properties").keys().asSequence().toList())
+            assertFalse(schema.has("propertyOrdering"))
+        }
     }
 
     @Test fun refinePassesTheTargetLanguageToGemini() {
@@ -157,7 +179,7 @@ class GemtypeCoreTest {
             bodies.add(JSONObject(body))
             HttpResult(200, ok("{\"rewritten\":\"আমি কাল আসবো না\"}"))
         }
-        assertEquals("আমি কাল আসবো না", runBlocking { client.refine("ami kal ashbo na", Action.NATIVE, config, "Bangla") })
+        assertEquals("আমি কাল আসবো না", runBlocking { client.refine("ami kal ashbo na", Action.NATIVE, config, "Bangla") }.text)
         assertTrue(systemOf(bodies.single()).contains("natural Bangla in its native script"))
     }
 
@@ -167,6 +189,21 @@ class GemtypeCoreTest {
             JSONObject().put("content", JSONObject().put("parts", org.json.JSONArray().put(JSONObject().put("text", text)))),
         ),
     ).toString()
+
+    @Test fun refineThinksAtTheRewriteLevelUnlessOverridden() {
+        val bodies = ArrayList<JSONObject>()
+        val client = GeminiClient { _, _, body ->
+            bodies.add(JSONObject(body))
+            HttpResult(200, ok("{\"rewritten\":\"Done.\"}"))
+        }
+        runBlocking {
+            client.refine("x", Action.IMPROVE, config)
+            client.refine("x", Action.IMPROVE, config, thinkingLevel = "HIGH")
+            client.refine("x", Action.IMPROVE, config, thinkingLevel = null)
+        }
+        fun level(i: Int) = bodies[i].getJSONObject("generationConfig").optJSONObject("thinkingConfig")?.getString("thinkingLevel")
+        assertEquals(listOf("MEDIUM", "HIGH", null), listOf(level(0), level(1), level(2)))
+    }
 
     @Test fun parsesTheRewrittenText() {
         val raw = ok(JSONObject().put("rewritten", "Fixed.").toString())
@@ -281,7 +318,7 @@ class GemtypeCoreTest {
             calls++
             if (calls == 1) HttpResult(503, "") else HttpResult(200, ok("{\"rewritten\":\"Done.\"}"))
         }
-        assertEquals("Done.", runBlocking { client.refine("x", Action.FIX, config) })
+        assertEquals("Done.", runBlocking { client.refine("x", Action.FIX, config) }.text)
         assertEquals(2, calls)
     }
 
@@ -292,7 +329,7 @@ class GemtypeCoreTest {
             if (bodies.size == 1) HttpResult(400, "{\"error\":{\"message\":\"Thinking level is not supported\"}}")
             else HttpResult(200, ok("{\"rewritten\":\"Done.\"}"))
         }
-        assertEquals("Done.", runBlocking { client.refine("x", Action.FIX, config) })
+        assertEquals("Done.", runBlocking { client.refine("x", Action.FIX, config) }.text)
         assertTrue(bodies[0].getJSONObject("generationConfig").has("thinkingConfig"))
         assertFalse(bodies[1].getJSONObject("generationConfig").has("thinkingConfig"))
     }

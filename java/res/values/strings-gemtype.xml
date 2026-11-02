@@ -14,6 +14,13 @@
     <string name="gemtype_copied">Copied</string>
     <string name="gemtype_loading">Asking Gemini…</string>
     <string name="gemtype_try_again">Try again</string>
+    <string name="gemtype_retry">Write another version</string>
+    <string name="gemtype_version_prev">Previous version</string>
+    <string name="gemtype_version_next">Next version</string>
+    <!-- "2/3": the version shown, and how many there are. -->
+    <string name="gemtype_version_count">%1$d/%2$d</string>
+    <!-- Under a result for text typed in English letters: how GemType understood it, in the language's own script. -->
+    <string name="gemtype_read_as">Read as: %1$s</string>
     <string name="gemtype_empty_field">Type something first, then tap GemType.</string>
     <string name="gemtype_too_long">That text is too long for GemType (limit: %1$d characters on each side of the cursor). Select a shorter part and try again.</string>
     <string name="gemtype_too_long_shared">That text is too long for GemType (limit: %1$d characters).</string>

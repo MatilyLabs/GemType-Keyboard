@@ -34,7 +34,9 @@ import org.matily.gemtype.core.Correction
 import org.matily.gemtype.core.Corrections
 import org.matily.gemtype.core.FixMode
 import org.matily.gemtype.core.GeminiException
+import org.matily.gemtype.core.Rewrite
 import org.matily.gemtype.core.Romanized
+import org.matily.gemtype.core.Versions
 
 /**
  * Drives the GemType panel: reads the field (or selection) through the
@@ -92,7 +94,9 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private var textScope = FieldText.Scope.FIELD
     private var source = ""
     private var mode = Pick(Action.FIX)
-    private val results = HashMap<Pick, String>()
+    // The last few results of each chip (see Versions), and the language (code) of the text when it is romanized.
+    private val results = HashMap<Pick, Versions<Rewrite>>()
+    private var romanizedLanguage: String? = null
 
     // English Fix is a list of corrections (what Gemini found, and which of them the user skipped); any other
     // text gets the rewrite, like the other chips. Decided in startFix once the text has been looked at.
@@ -111,8 +115,15 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private val titleView: TextView = panel.findViewById(R.id.gemtype_panel_title)
     private val resultBox: View = panel.findViewById(R.id.gemtype_panel_result_box)
     private val scroll: ScrollView = panel.findViewById(R.id.gemtype_panel_scroll)
+    private val labelRow: View = panel.findViewById(R.id.gemtype_panel_label_row)
     private val resultLabel: TextView = panel.findViewById(R.id.gemtype_panel_result_label)
+    private val versionsView: View = panel.findViewById(R.id.gemtype_panel_versions)
+    private val versionPrev: TextView = panel.findViewById(R.id.gemtype_panel_version_prev)
+    private val versionCount: TextView = panel.findViewById(R.id.gemtype_panel_version_count)
+    private val versionNext: TextView = panel.findViewById(R.id.gemtype_panel_version_next)
+    private val retryButton: TextView = panel.findViewById(R.id.gemtype_panel_retry)
     private val textView: TextView = panel.findViewById(R.id.gemtype_panel_text)
+    private val readAsView: TextView = panel.findViewById(R.id.gemtype_panel_read_as)
     private val fixRows: LinearLayout = panel.findViewById(R.id.gemtype_panel_fixes)
     private val progress: ProgressBar = panel.findViewById(R.id.gemtype_panel_progress)
     private val linkButton: TextView = panel.findViewById(R.id.gemtype_panel_link_button)
@@ -146,6 +157,17 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         scopeLabel.setTextColor(onSurfaceVariant)
         resultLabel.setTextColor(onSurfaceVariant)
         textView.setTextColor(onSurface)
+        readAsView.setTextColor(onSurfaceVariant)
+        for (view in listOf(versionPrev, versionNext)) {
+            view.setTextColor(onSurfaceVariant)
+            view.background = ripple(roundRect(Color.TRANSPARENT, 15f))
+        }
+        versionCount.setTextColor(onSurfaceVariant)
+        retryButton.setTextColor(primary)
+        retryButton.background = ripple(roundRect(Color.TRANSPARENT, 15f))
+        versionPrev.setOnClickListener { stepVersion(-1) }
+        versionNext.setOnClickListener { stepVersion(1) }
+        retryButton.setOnClickListener { retry() }
         progress.indeterminateTintList = ColorStateList.valueOf(primary)
         progress.progressBackgroundTintList = ColorStateList.valueOf(functionalColor)
         resultBox.background = roundRect(keyColor, 14f, strokeColor = ColorUtils.setAlphaComponent(primary, 0x30))
@@ -233,6 +255,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
     private fun reset() {
         results.clear()
+        romanizedLanguage = null
         fixes = null
         fixMode = FixMode.REWRITE
         skipped.clear()
@@ -258,6 +281,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
                     // Text typed in English letters that looks like one of the user's languages: convert it first, not Fix.
                     val native = detectLanguages()
                     setChips(native)
+                    romanizedLanguage = native.firstOrNull()?.language
                     // English is proofread; Bangla, Hindi, mixed and romanized text is rewritten.
                     fixMode = FixMode.of(source, native.isNotEmpty())
                     val first = native.firstOrNull()?.let { Pick(Action.NATIVE, it.language) } ?: Pick(Action.FIX)
@@ -330,10 +354,18 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         val found = fixes
         return if (proofreading(mode) && found != null) {
             Corrections.apply(source, found.filterIndexed { i, _ -> i !in skipped })
-        } else results[mode]
+        } else results[mode]?.current?.text
     }
 
     private fun hasResult(pick: Pick) = if (proofreading(pick)) fixes != null else results.containsKey(pick)
+
+    /** The ‹ / › next to the label: show an earlier or later version of the current result. */
+    private fun stepVersion(delta: Int) {
+        val versions = results[mode] ?: return
+        versions.step(delta)
+        error = null
+        render()
+    }
 
     /** The ✕ / ↺ on a Fix row: skip that correction, or put it back. */
     private fun toggleFix(index: Int) {
@@ -371,6 +403,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private fun pick(pick: Pick) {
         // Tapping the chip that is already running would only restart the same request.
         if (status != Status.READY || (loading && pick == mode)) return
+        // Tapping the chip that is already shown asks for another version (the proofreader's list has none).
+        if (pick == mode && hasResult(pick)) return retry()
         mode = pick
         if (hasResult(pick)) {
             job?.cancel()
@@ -382,26 +416,35 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         }
     }
 
-    private fun run(pick: Pick) {
+    private fun run(pick: Pick, avoid: List<String> = emptyList()) {
         job?.cancel()
         error = null
         loading = true
         mode = pick
         render()
-        job = scope.launch { fetch(pick) }
+        job = scope.launch { fetch(pick, avoid) }
     }
 
-    private suspend fun fetch(pick: Pick) {
+    /** Ask for another version of what the current chip shows, different from the versions kept so far. */
+    private fun retry() {
+        val versions = results[mode]
+        if (status != Status.READY || loading || proofreading(mode) || versions == null) return
+        run(mode, versions.all.map { it.text })
+    }
+
+    private suspend fun fetch(pick: Pick, avoid: List<String> = emptyList()) {
         mode = pick
         val text = source
         try {
             val config = withContext(Dispatchers.IO) { GemTypeSettings.load(context) }
-            val target = pick.language?.let { Romanized.englishName(it) }
+            // Native script writes the chip's language; the other chips read the text as romanized in its language.
+            val target = (pick.language ?: romanizedLanguage)?.let { Romanized.englishName(it) }
             if (proofreading(pick)) {
                 fixes = GemType.client.check(text, config, host.keyboardLanguage())
                 skipped.clear()
             } else {
-                results[pick] = GemType.client.refine(text, pick.action, config, target)
+                val rewrite = GemType.client.refine(text, pick.action, config, target, avoid = avoid)
+                results.getOrPut(pick) { Versions() }.add(rewrite)
             }
             // Remember which language was wanted: it is offered first next time.
             pick.language?.let { ConvertPrefs.setLastLanguage(context, it) }
@@ -420,7 +463,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private fun onLinkButton() {
         when {
             status == Status.NO_KEY -> host.openSettings()
-            error != null -> run(mode)
+            // After a failed "another version" the earlier versions are still there: ask again for a new one.
+            error != null -> if (hasResult(mode)) retry() else run(mode)
         }
     }
 
@@ -444,7 +488,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         fixRows.visibility = View.GONE
         textView.setTextColor(onSurface)
         resultLabel.text = if (ready) mode.action.resultLabel else ""
-        resultLabel.visibility = if (ready) View.VISIBLE else View.GONE
+        labelRow.visibility = if (ready) View.VISIBLE else View.GONE
+        readAsView.visibility = View.GONE
 
         if (!ready) {
             textView.textSize = 16f
@@ -472,20 +517,22 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
                 textView.setText(R.string.gemtype_looks_good)
             }
             found != null -> showFixes(found)
-            // A rewrite Fix shows what changed; the other rewrites show the new text.
-            result != null -> textView.text = if (mode.action == Action.FIX) DiffSpans.build(source, result, diffColors) else result
+            // Before the result: "another version" can fail while the earlier versions are still kept.
             error != null -> {
                 textView.text = error
                 textView.setTextColor(errorColor)
                 linkButton.setText(R.string.gemtype_try_again)
                 linkButton.visibility = View.VISIBLE
             }
+            // A rewrite Fix shows what changed; the other rewrites show the new text.
+            result != null -> textView.text = if (mode.action == Action.FIX) DiffSpans.build(source, result, diffColors) else result
             else -> {
                 textView.setText(R.string.gemtype_loading)
                 textView.setTextColor(onSurfaceVariant)
             }
         }
-        val canApply = result != null
+        showVersions(found == null && error == null)
+        val canApply = result != null && error == null
         // Nothing to put back when there are no corrections, or every one was skipped.
         val canPut = canApply && (found == null || result != source)
         for ((button, enabled) in listOf(copyButton to canApply, replaceButton to canPut, shareButton to canApply)) {
@@ -498,6 +545,26 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             chip.background = ripple(roundRect(if (selected) primary else functionalColor, 18f))
         }
         if (!keepScroll) scroll.scrollTo(0, 0)
+    }
+
+    /** The ‹ 2/3 › and ↻ next to the label, and the "Read as" line; [rewrite] is false for the proofreader's list and for errors. */
+    private fun showVersions(rewrite: Boolean) {
+        val versions = results[mode]
+        val shown = if (rewrite) versions?.current else null
+        readAsView.text = context.getString(R.string.gemtype_read_as, shown?.readAs.orEmpty())
+        readAsView.visibility = if (shown?.readAs != null) View.VISIBLE else View.GONE
+        // Retry also stays with an error that follows a failed retry (versions kept); never while a request runs.
+        val canVary = !proofreading(mode) && versions != null
+        retryButton.visibility = if (canVary && !loading) View.VISIBLE else View.GONE
+        val many = canVary && versions!!.size > 1
+        versionsView.visibility = if (many) View.VISIBLE else View.GONE
+        if (many) {
+            versionCount.text = context.getString(R.string.gemtype_version_count, versions!!.index + 1, versions.size)
+            for ((button, enabled) in listOf(versionPrev to (versions.index > 0), versionNext to (versions.index < versions.size - 1))) {
+                button.isEnabled = enabled
+                button.alpha = if (enabled) 1f else 0.3f
+            }
+        }
     }
 
     /** Fix result: the header, the text with the corrections marked in it, and a row per correction. */

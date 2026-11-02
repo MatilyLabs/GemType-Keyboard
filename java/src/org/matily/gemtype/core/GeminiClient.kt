@@ -10,13 +10,20 @@ import kotlinx.coroutines.delay
  */
 class GeminiClient(private val transport: Transport) {
 
-    /** Rewrite [text] with [action]. Returns the rewritten string. [target] is the language's English name for [Action.NATIVE]. */
-    suspend fun refine(text: String, action: Action, config: GemtypeConfig, target: String? = null): String {
+    /**
+     * Rewrite [text] with [action]. [target] is the language's English name: [Action.NATIVE] writes the text in it,
+     * and for the other actions it says the text is romanized [target], so the answer also says how it was read.
+     * [avoid] are earlier results: ask for another version. [thinkingLevel] overrides the app's choice (null: none).
+     */
+    suspend fun refine(
+        text: String, action: Action, config: GemtypeConfig, target: String? = null,
+        thinkingLevel: String? = Choices.rewriteThinkingLevel(config.model), avoid: List<String> = emptyList(),
+    ): Rewrite {
         requireKey(config)
-        return withFallbacks(Choices.thinkingLevel(config.model)) { level ->
-            val body = GeminiProtocol.requestBody(text, action, config.language, level, target).toString()
+        return withFallbacks(thinkingLevel) { level ->
+            val body = GeminiProtocol.requestBody(text, action, config.language, level, target, avoid).toString()
             val result = transport.post(config.model, config.apiKey, body)
-            GeminiProtocol.parseResponse(result.status, result.body)
+            GeminiProtocol.parseRewrite(result.status, result.body)
         }
     }
 
@@ -44,7 +51,7 @@ class GeminiClient(private val transport: Transport) {
      */
     suspend fun test(config: GemtypeConfig): Long {
         val start = System.nanoTime()
-        refine("Ths is a test.", Action.FIX, config)
+        refine("Ths is a test.", Action.FIX, config, thinkingLevel = Choices.thinkingLevel(config.model))
         return (System.nanoTime() - start) / 1_000_000
     }
 

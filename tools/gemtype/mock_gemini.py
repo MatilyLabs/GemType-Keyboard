@@ -8,13 +8,16 @@ without a real API key. Debug builds only:
 
 Each request body is printed so you can check what the app sends (the key
 itself is never printed). Replies use the same structured-JSON shape the app
-asks Gemini for: {"rewritten": "..."}, or {"corrections": [...]} for the proofreader
+asks Gemini for: {"rewritten": "..."}, {"native": "...", "rewritten": "..."} for rewrites of romanized text
+(request schema has "native"; "native" is a fixed sentence in the prompt's language, "rewritten" the text itself, or English for the English action),
+or {"corrections": [...]} for the proofreader
 (request schema has "corrections"): fixed demo corrections for "i dont think we can make it friday sorry",
 a few common typos otherwise, an empty list for text with none. Failure cases for the Test key button:
 "native script" prompts -> a fixed sentence in the language named in the prompt, the English prompt ("The text may be in any language...") -> English;
 key "bad-key" -> 400 invalid key; any model id not starting "gemini-3" -> 404.
 Failure modes keyed by the API key (a key that merely contains the word, e.g. AIzaMOCKRATE000000000000000000000000000):
 RATE -> 429, BUSY -> 503, LOCATION -> 400 "User location is not supported" (what Google says to unsupported regions, VPNs included), SLOW -> answers only after 40 s (MOCK_SLOW=n to change), GARBAGE -> 200 with a body that is not JSON.
+A request that says "Write a different version from this one" (the panel's retry) gets the usual answer with " (version N)" added, N counting up per text, so you can see the ‹ 2/3 › switcher.
 MOCK_DELAY=2 python3 tools/gemtype/mock_gemini.py answers after 2 s (to see spinners).
 """
 import json
@@ -26,11 +29,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 # Canned rewrites keyed by the first words of each action's prompt.
 DEMO = {
-    "Correct the grammar": "I don't think we can make it on Friday, sorry.",
-    "Rewrite the text to be clearer": "Unfortunately, I don't think we'll be able to make it on Friday. Sorry about that!",
-    "Rewrite the text to be significantly": "Sorry, we can't make Friday.",
-    "Rewrite the text in a professional": "I regret that we will be unable to attend on Friday. My apologies.",
-    "Rewrite the text in a friendly": "Ah sorry, don't think we can make it Friday!",
+    "Fix the grammar": "I don't think we can make it on Friday, sorry.",
+    "Make the text clearer": "Unfortunately, I don't think we'll be able to make it on Friday. Sorry about that!",
+    "Make the text much shorter": "Sorry, we can't make Friday.",
+    "Make the text polite and professional": "I regret that we will be unable to attend on Friday. My apologies.",
+    "Make the text friendly and relaxed": "Ah sorry, don't think we can make it Friday!",
 }
 
 
@@ -40,6 +43,9 @@ NATIVE = {
     "hindi": "मैं कल आऊँगा।", "urdu": "میں کل آؤں گا۔", "nepali": "म भोलि आउँछु।",
     "tamil": "நான் நாளை வருவேன்.", "telugu": "నేను రేపు వస్తాను.",
 }
+
+# How many versions of each text were asked for ("Write a different version ..."), for the retry demo.
+VERSIONS = {}
 
 # A few typos to repair so the Fix diff has something to show.
 TYPOS = {"Ths": "This", "tst": "test", "teh": "the", "recieve": "receive"}
@@ -102,17 +108,34 @@ class Handler(BaseHTTPRequestHandler):
             answer = {"corrections": corrections_for(text)}
             return self.reply(200, {"candidates": [{"content": {"parts": [{"text": json.dumps(answer)}]}}]})
         text = body["contents"][0]["parts"][0]["text"].removeprefix("TEXT:\n")
+        retry = "Write a different version" in system
+        if "native" in schema.get("properties", {}):
+            # Romanized text: how it was read (in the language's script), then the rewrite.
+            language = system.split("The text is ")[1].split(" typed")[0].lower()
+            native = NATIVE.get(language, "[" + language + "] " + text)
+            out = "I will not come tomorrow." if "fluent English" in system else text
+            return self.reply(200, {"candidates": [{"content": {"parts": [{"text": json.dumps(
+                {"native": native, "rewritten": self.versioned(out, text, retry)}, ensure_ascii=False)}]}}]})
         out = next((v for k, v in DEMO.items() if system.startswith(k)), text)
         if "native script" in system:
             language = system.split("The text is ")[1].split(" typed")[0].lower()
             out = NATIVE.get(language, "[" + language + "] " + text)
         elif system.startswith("The text may be in any language"):
             out = "I will not come tomorrow."
-        if system.startswith("Correct the grammar") and "friday" not in text.lower():
+        if system.startswith("Fix the grammar") and "friday" not in text.lower():
             out = text[:1].upper() + text[1:].replace(" i ", " I ").replace("dont", "don't").rstrip(".") + "."
             for typo, fix in TYPOS.items():
                 out = out.replace(typo, fix)
+        out = self.versioned(out, text, retry)
         self.reply(200, {"candidates": [{"content": {"parts": [{"text": json.dumps({"rewritten": out})}]}}]})
+
+    @staticmethod
+    def versioned(out, text, retry):
+        """The canned answer; a retry gets "(version N)" added so a different text comes back each time."""
+        if not retry:
+            return out
+        VERSIONS[text] = VERSIONS.get(text, 1) + 1
+        return f"{out} (version {VERSIONS[text]})"
 
     def reply(self, status, obj):
         self.reply_raw(status, json.dumps(obj).encode())

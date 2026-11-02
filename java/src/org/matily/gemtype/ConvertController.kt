@@ -229,7 +229,7 @@ class ConvertController(
                     host.openSettings()
                     return@launch
                 }
-                val result = GemType.client.refine(field.text, Action.NATIVE, config, Romanized.englishName(language))
+                val result = GemType.client.refine(field.text, Action.NATIVE, config, Romanized.englishName(language)).text
                 if (field.replace(host, result)) {
                     host.clearSuggestions()
                     busy = -1

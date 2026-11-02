@@ -38,6 +38,12 @@ object Choices {
     }
 
     /**
+     * Rewrites (Improve, Formal, English, Native script...) read better with some reasoning: MEDIUM on every
+     * Gemini 3 model for now. Compare levels with `RewriteEval` (GEMTYPE_EVAL_THINKING=MEDIUM,HIGH).
+     */
+    fun rewriteThinkingLevel(model: String): String? = if (model.startsWith("gemini-3")) "MEDIUM" else null
+
+    /**
      * The proofreader needs reasoning to judge sentences: MEDIUM on every Gemini 3 model (Flash-Lite included).
      * On the 59-case eval MEDIUM caught 58 and changed nothing it shouldn't, in about 1.6 s; LOW caught 54-55
      * in about 0.9 s and sometimes wrote English words in Bangla script.

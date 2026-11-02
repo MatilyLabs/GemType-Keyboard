@@ -134,7 +134,7 @@ internal class ClipboardFixActivity : AppCompatActivity() {
                     original.length > FieldText.MAX_CHARS ->
                         return@launch show(getString(R.string.gemtype_too_long_shared, FieldText.MAX_CHARS))
                 }
-                val fixed = GemType.client.refine(original!!, Action.FIX, config)
+                val fixed = GemType.client.refine(original!!, Action.FIX, config).text
                 clipboard.setPrimaryClip(ClipData.newPlainText("GemType", fixed))
                 show(getString(R.string.gemtype_clip_done), detail = "“$fixed”", button = getString(R.string.gemtype_clip_undo)) {
                     clipboard.setPrimaryClip(ClipData.newPlainText("GemType", original))

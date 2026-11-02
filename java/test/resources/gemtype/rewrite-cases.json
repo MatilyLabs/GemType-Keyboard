@@ -518,5 +518,336 @@
       "client"
     ],
     "note": "mixed Bangla and English: fix the English typo cancle, keep English words in Latin, add punctuation"
+  },
+  {
+    "id": "en-bn-1",
+    "group": "ENGLISH romanized bn",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "bn",
+    "text": "Tmr sathe amr kono kotha nai, tmi manush k ki vabo vai? Ami onek kharap manush.",
+    "expected": "I have nothing to say to you. What do you think of people, bro? I am a very bad person.",
+    "mustContain": [
+      "you"
+    ],
+    "mustNotContain": [
+      "tomorrow",
+      "tmr"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "the user's sentence: tmr is তোমার (your/with you), not tomorrow; k is কে; vai is ভাই"
+  },
+  {
+    "id": "en-bn-2",
+    "group": "ENGLISH romanized bn",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "bn",
+    "text": "tmr bari te k k ase? ami kal ashbo",
+    "expected": "Who all is at your house? I will come tomorrow.",
+    "mustContain": [
+      "your",
+      "tomorrow"
+    ],
+    "mustNotContain": [
+      "tmr",
+      "ashbo"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "tmr is your but kal ashbo is tomorrow; k k is who all"
+  },
+  {
+    "id": "en-bn-3",
+    "group": "ENGLISH romanized bn",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "bn",
+    "text": "vai kno phone dhorso na? ami kmn chinta korsilam",
+    "expected": "Bro, why aren't you picking up the phone? I was so worried.",
+    "mustContain": [
+      "why",
+      "you"
+    ],
+    "mustNotContain": [
+      "kno",
+      "korsilam"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "kno is why here; vai is bro; kmn is an intensifier (how worried I was)"
+  },
+  {
+    "id": "en-bn-4",
+    "group": "ENGLISH romanized bn",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "bn",
+    "text": "ajke office e k k ashche? amr sorir ta valo nai, tai ashte parbo na",
+    "expected": "Who all is coming to the office today? I am not feeling well, so I can't come.",
+    "mustContain": [
+      "who",
+      "today"
+    ],
+    "mustNotContain": [
+      "tomorrow",
+      "ashche",
+      "valo"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "k k is who all; ajke is today, not tomorrow; valo nai is not well"
+  },
+  {
+    "id": "en-bn-5",
+    "group": "ENGLISH romanized bn",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "bn",
+    "text": "tui kmn achis re? onek din kono khobor nai, valo achis to?",
+    "expected": "How are you, man? There has been no news for so long. Are you doing well?",
+    "mustContain": [
+      "how",
+      "you"
+    ],
+    "mustNotContain": [
+      "kmn",
+      "achis",
+      "valo"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "tui form of you, kmn is how, achis is are, valo is well"
+  },
+  {
+    "id": "en-bn-6",
+    "group": "ENGLISH romanized bn",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "bn",
+    "text": "amr kno kichu valo lagche na vai, tmr k mone hoy ki korbo ami?",
+    "expected": "Nothing feels good to me, bro. What do you think I should do?",
+    "mustContain": [
+      "what",
+      "you"
+    ],
+    "mustNotContain": [
+      "tomorrow",
+      "tmr",
+      "valo"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "kno is any, tmr k mone hoy is what do you think; tmr is not tomorrow"
+  },
+  {
+    "id": "en-hi-1",
+    "group": "ENGLISH romanized hi",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "hi",
+    "text": "mjhe tmhari bahut yaad aa rhi hai, kab milogi? kal free ho kya?",
+    "expected": "I miss you a lot. When will we meet? Are you free tomorrow?",
+    "mustContain": [
+      "miss",
+      "when"
+    ],
+    "mustNotContain": [
+      "mjhe",
+      "tmhari",
+      "rhi"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "mjhe is mujhe, tmhari is tumhari, rhi is rahi"
+  },
+  {
+    "id": "en-hi-2",
+    "group": "ENGLISH romanized hi",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "hi",
+    "text": "yr kya kr rha hai tu? kb se call kr rha hu, pick hi nhi kr rha",
+    "expected": "Dude, what are you doing? I have been calling for so long and you are not picking up.",
+    "mustContain": [
+      "call",
+      "you"
+    ],
+    "mustNotContain": [
+      "kr",
+      "nhi",
+      "kb",
+      "rha"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "yr is yaar, kr rha is kar raha, kb is kab, nhi is nahi"
+  },
+  {
+    "id": "en-hi-3",
+    "group": "ENGLISH romanized hi",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "hi",
+    "text": "sir mera kaam kal tk ho jayega, aap tension mat lijiye. client ko bhi bta dunga",
+    "expected": "Sir, my work will be done by tomorrow, please don't worry. I will let the client know as well.",
+    "mustContain": [
+      "tomorrow",
+      "client"
+    ],
+    "mustNotContain": [
+      "tk",
+      "bta",
+      "jayega"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "tk is tak (by tomorrow), bta is bata"
+  },
+  {
+    "id": "improve-bnl-1",
+    "group": "IMPROVE romanized bn",
+    "action": "IMPROVE",
+    "target": null,
+    "romanized": "bn",
+    "text": "ami kal office e jete parbo na, sorir ta valo na. tmi meeting ta sambhal nio",
+    "expected": "ami kal office e jete parbo na, sorir ta valo nei. tumi meeting ta ektu sambhale nio",
+    "mustContain": [],
+    "mustNotContain": [
+      "tomorrow",
+      "the",
+      "cannot"
+    ],
+    "script": "Latin",
+    "keep": [
+      "meeting"
+    ],
+    "note": "stays Banglish (Latin letters, not Bangla script and not English); meeting stays"
+  },
+  {
+    "id": "improve-bnl-2",
+    "group": "IMPROVE romanized bn",
+    "action": "IMPROVE",
+    "target": null,
+    "romanized": "bn",
+    "text": "vai ajke amr mon ta onk kharap, kono kichu valo lagtese na, ektu kotha bolba?",
+    "expected": "bhai ajke amar mon ta onek kharap, kichui valo lagche na. ektu kotha bolba?",
+    "mustContain": [],
+    "mustNotContain": [
+      "today",
+      "feeling",
+      "the"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "stays Banglish, not translated"
+  },
+  {
+    "id": "improve-bnl-3",
+    "group": "IMPROVE romanized bn",
+    "action": "IMPROVE",
+    "target": null,
+    "romanized": "bn",
+    "text": "tmr sathe kotha bolte chai, kokhon free thakba bolo",
+    "expected": "tomar sathe kotha bolte chai, kokhon free thakba bolo to?",
+    "mustContain": [],
+    "mustNotContain": [
+      "when",
+      "you",
+      "want"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "stays Banglish; tmr is your/with you"
+  },
+  {
+    "id": "improve-bnl-4",
+    "group": "IMPROVE romanized bn",
+    "action": "IMPROVE",
+    "target": null,
+    "romanized": "bn",
+    "text": "ami tomake ekta link pathalam https://example.com/form, ota fillup kore dio kal er moddhe",
+    "expected": "ami tomake ekta link pathalam: https://example.com/form, ota kal er moddhe fillup kore dio",
+    "mustContain": [],
+    "mustNotContain": [
+      "tomorrow",
+      "the"
+    ],
+    "script": "Latin",
+    "keep": [
+      "https://example.com/form"
+    ],
+    "note": "stays Banglish; the URL stays unchanged"
+  },
+  {
+    "id": "improve-bn-1",
+    "group": "IMPROVE bn",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "আমি কাল অফিসে আসতে পারবো না আমার শরীর ভালো না তুমি মিটিং টা দেখে নিও",
+    "expected": "আমি কাল অফিসে আসতে পারব না, শরীরটা ভালো নেই। তুমি মিটিংটা একটু সামলে নিও।",
+    "mustContain": [
+      "কাল"
+    ],
+    "mustNotContain": [],
+    "script": "Bengali",
+    "keep": [],
+    "note": "Bangla script stays Bangla; natural, same meaning"
+  },
+  {
+    "id": "improve-bn-2",
+    "group": "IMPROVE bn",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "ভাই আজকে আমার মনটা অনেক খারাপ কিছু ভালো লাগছে না একটু কথা বলবা?",
+    "expected": "ভাই, আজ আমার মনটা খুব খারাপ, কিছুই ভালো লাগছে না। একটু কথা বলবে?",
+    "mustContain": [
+      "আজ"
+    ],
+    "mustNotContain": [],
+    "script": "Bengali",
+    "keep": [],
+    "note": "Bangla script stays Bangla; casual chat tone"
+  },
+  {
+    "id": "improve-en-1",
+    "group": "IMPROVE en",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "hey just wanted to check if u r free tmrw for a quick call, need ur input on the project",
+    "expected": "Hey, just checking if you're free tomorrow for a quick call. I'd like your input on the project.",
+    "mustContain": [
+      "tomorrow",
+      "project"
+    ],
+    "mustNotContain": [
+      "u",
+      "ur",
+      "tmrw"
+    ],
+    "script": "Latin",
+    "keep": [
+      "project"
+    ],
+    "note": "English chat text: fix short forms, sound natural, keep it casual"
+  },
+  {
+    "id": "improve-en-2",
+    "group": "IMPROVE en",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "Me and my team is working on the report since monday, we will sent it to you when it will be ready.",
+    "expected": "My team and I have been working on the report since Monday, and we'll send it to you as soon as it's ready.",
+    "mustContain": [
+      "Monday"
+    ],
+    "mustNotContain": [
+      "is working",
+      "will sent"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "English email: fix grammar and flow, keep the meaning"
   }
 ]

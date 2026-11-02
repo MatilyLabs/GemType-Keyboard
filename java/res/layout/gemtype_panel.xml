@@ -76,12 +76,72 @@
                 android:paddingEnd="12dp"
                 android:paddingTop="8dp"
                 android:paddingBottom="8dp">
-                <TextView
-                    android:id="@+id/gemtype_panel_result_label"
-                    android:layout_width="wrap_content"
+                <!-- Label, ‹ 2/3 › between the last versions, and ↻ for another one (each shown when it applies). -->
+                <LinearLayout
+                    android:id="@+id/gemtype_panel_label_row"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:minHeight="30dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <TextView
+                        android:id="@+id/gemtype_panel_result_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <LinearLayout
+                        android:id="@+id/gemtype_panel_versions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:visibility="gone">
+                        <TextView
+                            android:id="@+id/gemtype_panel_version_prev"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="30dp"
+                            android:minHeight="30dp"
+                            android:gravity="center"
+                            android:text="‹"
+                            android:textSize="20sp"
+                            android:contentDescription="@string/gemtype_version_prev"
+                            android:clickable="true"
+                            android:focusable="true" />
+                        <TextView
+                            android:id="@+id/gemtype_panel_version_count"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/gemtype_panel_version_next"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="30dp"
+                            android:minHeight="30dp"
+                            android:gravity="center"
+                            android:text="›"
+                            android:textSize="20sp"
+                            android:contentDescription="@string/gemtype_version_next"
+                            android:clickable="true"
+                            android:focusable="true" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/gemtype_panel_retry"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="36dp"
+                        android:minHeight="30dp"
+                        android:gravity="center"
+                        android:text="↻"
+                        android:textSize="18sp"
+                        android:contentDescription="@string/gemtype_retry"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:visibility="gone" />
+                </LinearLayout>
                 <TextView
                     android:id="@+id/gemtype_panel_text"
                     android:layout_width="match_parent"
@@ -90,6 +150,16 @@
                     android:textSize="16sp"
                     android:lineSpacingMultiplier="1.15"
                     android:textIsSelectable="false" />
+                <!-- Romanized text: how it was understood (in the language's own script). -->
+                <TextView
+                    android:id="@+id/gemtype_panel_read_as"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textSize="12sp"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:visibility="gone" />
                 <!-- Fix: one row per correction (filled in by GemTypePanelController). -->
                 <LinearLayout
                     android:id="@+id/gemtype_panel_fixes"

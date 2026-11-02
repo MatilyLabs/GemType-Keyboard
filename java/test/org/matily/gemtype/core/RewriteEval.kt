@@ -11,19 +11,23 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Scores the rewrite actions that change script or language ([Action.NATIVE], [Action.ENGLISH]) and the
- * plain [Action.FIX] on non-English text, against real Gemini, on `test/resources/gemtype/rewrite-cases.json`.
+ * Scores the rewrite actions (Native script, English, Improve and the other rewrites) against real Gemini,
+ * on `test/resources/gemtype/rewrite-cases.json`.
  * Skipped unless GEMTYPE_EVAL_KEY is set, so a normal test run never touches the network:
  *
  *     cd java && GEMTYPE_EVAL_KEY=... ./gradlew testOnlineDebugUnitTest --tests '*RewriteEval*' -i
  *
- * Optional: GEMTYPE_EVAL_MODEL (default [Choices.DEFAULT_MODEL]), GEMTYPE_EVAL_GAP_MS (pause between requests,
+ * Optional: GEMTYPE_EVAL_MODEL (default [Choices.DEFAULT_MODEL]), GEMTYPE_EVAL_THINKING (MINIMAL, LOW, MEDIUM,
+ * HIGH or NONE, or a comma-separated list such as MEDIUM,HIGH to compare: the whole set runs once per level;
+ * default the app's [Choices.rewriteThinkingLevel]), GEMTYPE_EVAL_GAP_MS (pause between requests,
  * default 4000, to stay under the free tier's per-minute limit), GEMTYPE_EVAL_API_BASE (a mock server),
- * GEMTYPE_EVAL_CASES (another cases file). Prints a per-group table and the failures, and writes
- * build/rewrite-eval.txt. The key is never printed or written.
+ * GEMTYPE_EVAL_CASES (another cases file). Prints a per-group table and the failures for each level, and writes
+ * all of them to build/rewrite-eval.txt. The key is never printed or written.
  *
- * Each case goes through the app's own path, `GeminiClient.refine(text, action, config, target)` with writing
- * language "auto"; `target` is [Romanized.englishName] of the case's language code, as the app passes it.
+ * Each case goes through the app's own path, `GeminiClient.refine(text, action, config, target, thinkingLevel)` with
+ * writing language "auto"; `target` is [Romanized.englishName] of the case's `romanized` language code (text typed
+ * in English letters: every action but Native script then uses the two-field request, as the panel does), else of
+ * its `target` code ([Action.NATIVE]).
  *
  * A case passes when all four hold: the script share (letters and marks in the case's `script`, ignoring the
  * `keep` items) is at least [MIN_SCRIPT_SHARE]; every `mustContain` is in the output (case-insensitive); no
@@ -32,12 +36,12 @@ import java.io.File
  */
 class RewriteEval {
     private class Case(
-        val id: String, val group: String, val action: Action, val target: String?, val text: String, val expected: String,
-        val mustContain: List<String>, val mustNotContain: List<String>, val script: Character.UnicodeScript,
+        val id: String, val group: String, val action: Action, val target: String?, val romanized: String?,
+        val text: String, val expected: String, val mustContain: List<String>, val mustNotContain: List<String>, val script: Character.UnicodeScript,
         val keep: List<String>, val note: String,
     )
 
-    private class Result(val case: Case, val output: String?, val error: String?, val ms: Long) {
+    private class Result(val case: Case, val output: String?, val readAs: String?, val error: String?, val ms: Long) {
         val share: Double = if (output == null) 0.0 else scriptShare(output, case.script, case.keep)
         val scriptOk = output != null && share >= MIN_SCRIPT_SHARE
         // Bangla ড় য় and Hindi क़ ड़ have two encodings that look the same; compare in one (NFC).
@@ -60,7 +64,7 @@ class RewriteEval {
             val o = array.getJSONObject(it)
             Case(
                 o.getString("id"), o.getString("group"), Action.valueOf(o.getString("action")),
-                o.optString("target").ifBlank { null }, o.getString("text"), o.optString("expected"),
+                o.optString("target").ifBlank { null }, o.optString("romanized").ifBlank { null }, o.getString("text"), o.optString("expected"),
                 strings(o.optJSONArray("mustContain")), strings(o.optJSONArray("mustNotContain")),
                 Character.UnicodeScript.forName(o.getString("script")), strings(o.optJSONArray("keep")), o.optString("note"),
             )
@@ -78,37 +82,44 @@ class RewriteEval {
         val base = System.getenv("GEMTYPE_EVAL_API_BASE")?.takeIf { it.isNotBlank() }
             ?: "https://generativelanguage.googleapis.com/v1beta/models"
         val client = GeminiClient(HttpTransport(base))
+        // A comma-separated list runs the whole set once per level, to compare quality and speed.
+        val levels = System.getenv("GEMTYPE_EVAL_THINKING")?.takeIf { it.isNotBlank() }?.split(',')
+            ?.map { it.trim().uppercase() }?.map { if (it == "NONE") null else it } ?: listOf(Choices.rewriteThinkingLevel(model))
         val gapMs = System.getenv("GEMTYPE_EVAL_GAP_MS")?.toLongOrNull() ?: 4_000L
         val config = GemtypeConfig(key, model, Choices.AUTO_LANGUAGE)
 
-        val results = cases.mapIndexed { i, c ->
-            if (i > 0) runBlocking { delay(gapMs) }
-            val target = c.target?.let { Romanized.englishName(it) }
-            var output: String? = null
-            var error: String? = null
-            var ms = 0L
-            // Patient retries on a rate limit (not timed); anything else is recorded as the case's error.
-            for (attempt in 1..4) {
-                val start = System.nanoTime()
-                try {
-                    output = runBlocking { client.refine(c.text, c.action, config, target) }
-                    error = null
-                    ms = (System.nanoTime() - start) / 1_000_000
-                    break
-                } catch (e: GeminiException) {
-                    error = "${e.kind}: ${e.message}"
-                    ms = (System.nanoTime() - start) / 1_000_000
-                    if (e.kind != GeminiException.Kind.RATE_LIMITED) break
-                    runBlocking { delay(30_000L * attempt) }
+        val reports = levels.map { thinking ->
+            val results = cases.mapIndexed { i, c ->
+                if (i > 0) runBlocking { delay(gapMs) }
+                val target = (c.romanized ?: c.target)?.let { Romanized.englishName(it) }
+                var output: String? = null
+                var readAs: String? = null
+                var error: String? = null
+                var ms = 0L
+                // Patient retries on a rate limit (not timed); anything else is recorded as the case's error.
+                for (attempt in 1..4) {
+                    val start = System.nanoTime()
+                    try {
+                        val rewrite = runBlocking { client.refine(c.text, c.action, config, target, thinking) }
+                        output = rewrite.text
+                        readAs = rewrite.readAs
+                        error = null
+                        ms = (System.nanoTime() - start) / 1_000_000
+                        break
+                    } catch (e: GeminiException) {
+                        error = "${e.kind}: ${e.message}"
+                        ms = (System.nanoTime() - start) / 1_000_000
+                        if (e.kind != GeminiException.Kind.RATE_LIMITED) break
+                        runBlocking { delay(30_000L * attempt) }
+                    }
                 }
+                Result(c, output, readAs, error, ms)
             }
-            Result(c, output, error, ms)
+            report("$model, thinking ${thinking ?: "none"}", results).also { println(it) }
         }
-        val report = report(model, results)
-        println(report)
         File("build").mkdirs()
-        File("build/rewrite-eval.txt").writeText(report)
-        assertTrue(results.isNotEmpty())
+        File("build/rewrite-eval.txt").writeText(reports.joinToString("\n" + "=".repeat(60) + "\n\n"))
+        assertTrue(reports.isNotEmpty())
     }
 
     private fun report(model: String, results: List<Result>): String {
@@ -126,13 +137,15 @@ class RewriteEval {
         val failures = results.filter { !it.pass }
         if (failures.isNotEmpty()) sb.append("\nFailures\n")
         for (r in failures) {
-            sb.append("\n[${r.case.id}] ${r.case.action.name.lowercase()} ${r.case.target ?: ""}: ${r.case.note}\n")
+            sb.append("\n[${r.case.id}] ${r.case.action.name.lowercase()} ${r.case.romanized ?: r.case.target ?: ""}: ${r.case.note}\n")
             sb.append("  text:     ${r.case.text}\n")
             if (r.error != null) {
                 sb.append("  error:    ${r.error}\n")
                 continue
             }
-            sb.append("  got:      ${r.output}\n  expected: ${r.case.expected}\n")
+            sb.append("  got:      ${r.output}\n")
+            if (r.readAs != null) sb.append("  read as:  ${r.readAs}\n")
+            sb.append("  expected: ${r.case.expected}\n")
             if (!r.scriptOk) sb.append("  script:   ${(r.share * 100).toInt()}% ${r.case.script.name.lowercase()}, need ${(MIN_SCRIPT_SHARE * 100).toInt()}%\n")
             if (r.missing.isNotEmpty()) sb.append("  missing:  ${r.missing}\n")
             if (r.forbidden.isNotEmpty()) sb.append("  forbidden present: ${r.forbidden}\n")
