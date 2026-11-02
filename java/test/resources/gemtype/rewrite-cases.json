@@ -849,5 +849,766 @@
     "script": "Latin",
     "keep": [],
     "note": "English email: fix grammar and flow, keep the meaning"
+  },
+  {
+    "id": "ur-native-1",
+    "group": "NATIVE ur",
+    "action": "NATIVE",
+    "target": "ur",
+    "text": "mein kal subha ghar aaunga, tm wahan rehna. meeting k baad call krunga",
+    "expected": "میں کل صبح گھر آؤں گا، تم وہاں رہنا۔ میٹنگ کے بعد کال کروں گا۔",
+    "mustContain": [
+      "کل",
+      "صبح"
+    ],
+    "mustNotContain": [
+      "kal",
+      "subha",
+      "ghar",
+      "aaunga",
+      "wahan",
+      "rehna",
+      "krunga"
+    ],
+    "script": "Arabic",
+    "keep": [],
+    "note": "Roman Urdu: tm is tum, k is ke, krunga is karunga, subha is subah; meeting/call are English words that may be written in Urdu script. Urdu not Hindi, so no Devanagari (the Arabic script share check enforces it)"
+  },
+  {
+    "id": "en-ur-1",
+    "group": "ENGLISH romanized ur",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "ur",
+    "text": "kia hal hai? aaj raat khana kahan khayen gy? mujhe bht bhook lgi hai",
+    "expected": "How are you? Where shall we have dinner tonight? I am very hungry.",
+    "mustContain": [
+      "where",
+      "hungry"
+    ],
+    "mustNotContain": [
+      "kahan",
+      "khayen",
+      "bhook",
+      "lgi",
+      "bht",
+      "mujhe"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Roman Urdu with short forms bht (bohat), lgi (lagi), gy (gey/ge); kahan is where, bhook lagi hai is I am hungry"
+  },
+  {
+    "id": "improve-ur-1",
+    "group": "IMPROVE ur",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "میں کل دفتر نہیں آ سکوں گا میری طبیعت ٹھیک نہیں ہے آپ میٹنگ سنبھال لیں",
+    "expected": "میں کل دفتر نہیں آ سکوں گا، میری طبیعت ٹھیک نہیں ہے۔ آپ میٹنگ سنبھال لیں۔",
+    "mustContain": [
+      "کل",
+      "نہیں"
+    ],
+    "mustNotContain": [],
+    "script": "Arabic",
+    "keep": [],
+    "note": "Urdu script stays Urdu: add commas and the Urdu full stop ۔, keep the polite آپ register"
+  },
+  {
+    "id": "ne-native-1",
+    "group": "NATIVE ne",
+    "action": "NATIVE",
+    "target": "ne",
+    "text": "ma bholi ghar jaanchu, timi kta chau? khana khayau?",
+    "expected": "म भोलि घर जान्छु, तिमी कता छौ? खाना खायौ?",
+    "mustContain": [
+      "घर",
+      "खाना"
+    ],
+    "mustNotContain": [
+      "bholi",
+      "ghar",
+      "jaanchu",
+      "timi",
+      "kta",
+      "chau",
+      "khana",
+      "khayau"
+    ],
+    "script": "Devanagari",
+    "keep": [],
+    "note": "Roman Nepali (not Hindi): kta is kata (where), chau is छौ, khayau is खायौ. भोलि/भोली and तिमी/तिमि have variant spellings, so only घर and खाना are required"
+  },
+  {
+    "id": "en-ne-1",
+    "group": "ENGLISH romanized ne",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "ne",
+    "text": "bholi ghar aaunu hai, ma khana banayera rakhchu, late nagarnu hai",
+    "expected": "Come home tomorrow, I will have the food ready, do not be late.",
+    "mustContain": [
+      "tomorrow"
+    ],
+    "mustNotContain": [
+      "bholi",
+      "aaunu",
+      "banayera",
+      "rakhchu",
+      "nagarnu",
+      "khana"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Roman Nepali: bholi is tomorrow, aaunu hai is please come (hai is a softener); only tomorrow is required because khana may be food, meal or dinner"
+  },
+  {
+    "id": "improve-ne-1",
+    "group": "IMPROVE ne",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "म भोलि बिहान घर आउँछु तिमी पनि आऊ है खाना सँगै खाउँला",
+    "expected": "म भोलि बिहान घर आउँछु, तिमी पनि आऊ है। खाना सँगै खाउँला।",
+    "mustContain": [
+      "घर",
+      "खाना"
+    ],
+    "mustNotContain": [],
+    "script": "Devanagari",
+    "keep": [],
+    "note": "Nepali stays Nepali (not Hindi forms like आऊंगा, तुम): add commas and the full stop ।"
+  },
+  {
+    "id": "ta-native-1",
+    "group": "NATIVE ta",
+    "action": "NATIVE",
+    "target": "ta",
+    "text": "naan inniku office ku varala, udambu sari ila. nalaiku varen",
+    "expected": "நான் இன்னைக்கு ஆபீஸுக்கு வரல, உடம்பு சரியில்ல. நாளைக்கு வரேன்.",
+    "mustContain": [
+      "நான்",
+      "நாளை"
+    ],
+    "mustNotContain": [
+      "naan",
+      "inniku",
+      "varala",
+      "udambu",
+      "nalaiku",
+      "varen"
+    ],
+    "script": "Tamil",
+    "keep": [],
+    "note": "Tanglish with colloquial spelling; நாளை also matches நாளைக்கு (nalaiku). office/ku may become ஆபீஸுக்கு (an English word in Tamil script)"
+  },
+  {
+    "id": "en-ta-1",
+    "group": "ENGLISH romanized ta",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "ta",
+    "text": "bro nee enga irukka? naan unaku call panren, konjam wait pannu",
+    "expected": "Bro, where are you? I will call you, wait a little.",
+    "mustContain": [
+      "where",
+      "call"
+    ],
+    "mustNotContain": [
+      "enga",
+      "irukka",
+      "panren",
+      "konjam",
+      "unaku",
+      "pannu"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Tanglish: enga irukka is where are you, call panren is I will call, konjam is a little; call and wait are English words already in the text"
+  },
+  {
+    "id": "improve-ta-1",
+    "group": "IMPROVE ta",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "நான் நாளைக்கு காலைல ஆபீஸ்க்கு வரேன் நீ மீட்டிங் முடிஞ்சதும் கால் பண்ணு",
+    "expected": "நான் நாளைக்கு காலைல ஆபீஸுக்கு வரேன். நீ மீட்டிங் முடிஞ்சதும் கால் பண்ணு.",
+    "mustContain": [
+      "நாளை",
+      "காலை"
+    ],
+    "mustNotContain": [],
+    "script": "Tamil",
+    "keep": [],
+    "note": "Spoken Tamil stays spoken, not formal literary Tamil; நாளை and காலை match both the spoken and the formal forms"
+  },
+  {
+    "id": "te-native-1",
+    "group": "NATIVE te",
+    "action": "NATIVE",
+    "target": "te",
+    "text": "nenu repu offic ki ranu, naku baga ledu. miru meeting chusukondi",
+    "expected": "నేను రేపు ఆఫీస్‌కి రాను, నాకు బాగా లేదు. మీరు మీటింగ్ చూసుకోండి.",
+    "mustContain": [
+      "నేను",
+      "రేపు"
+    ],
+    "mustNotContain": [
+      "nenu",
+      "repu",
+      "offic",
+      "ranu",
+      "baga",
+      "ledu",
+      "chusukondi"
+    ],
+    "script": "Telugu",
+    "keep": [],
+    "note": "offic is a typo for office; naku (నాకు), baga (బాగా) are short forms; మీటింగ్ may be written in Telugu script"
+  },
+  {
+    "id": "en-te-1",
+    "group": "ENGLISH romanized te",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "te",
+    "text": "ela unnav? repu evening free ga unnava? coffee ki veldam",
+    "expected": "How are you? Are you free tomorrow evening? Let's go for coffee.",
+    "mustContain": [
+      "tomorrow",
+      "coffee"
+    ],
+    "mustNotContain": [
+      "repu",
+      "unnav",
+      "unnava",
+      "veldam",
+      "ela"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Romanized Telugu: ela unnav is how are you, repu is tomorrow, veldam is let us go"
+  },
+  {
+    "id": "improve-te-1",
+    "group": "IMPROVE te",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "నేను రేపు ఉదయం ఆఫీస్ కి వస్తాను నువ్వు కూడా రా భోజనం కలిసి చేద్దాం",
+    "expected": "నేను రేపు ఉదయం ఆఫీస్‌కి వస్తాను, నువ్వు కూడా రా. భోజనం కలిసి చేద్దాం.",
+    "mustContain": [
+      "రేపు",
+      "భోజనం"
+    ],
+    "mustNotContain": [],
+    "script": "Telugu",
+    "keep": [],
+    "note": "Telugu stays Telugu; add commas and full stop; spoken register kept"
+  },
+  {
+    "id": "mr-native-1",
+    "group": "NATIVE mr",
+    "action": "NATIVE",
+    "target": "mr",
+    "text": "mi udya office la yeu shakat nhi, tabyet theek nahi. tu meeting bagh na",
+    "expected": "मी उद्या ऑफिसला येऊ शकत नाही, तब्येत ठीक नाही. तू मीटिंग बघ ना.",
+    "mustContain": [
+      "उद्या",
+      "नाही"
+    ],
+    "mustNotContain": [
+      "udya",
+      "nhi",
+      "tabyet",
+      "shakat",
+      "bagh",
+      "yeu"
+    ],
+    "script": "Devanagari",
+    "keep": [],
+    "note": "Roman Marathi (not Hindi): nhi is nahi (नाही), yeu shakat nahi is cannot come, tabyet is तब्येत; ऑफिस and मीटिंग may be Devanagari"
+  },
+  {
+    "id": "en-mr-1",
+    "group": "ENGLISH romanized mr",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "mr",
+    "text": "kay kartoys? udya sandhyakali free ahes ka? chaha pyayla jau",
+    "expected": "What are you doing? Are you free tomorrow evening? Let's go for tea.",
+    "mustContain": [
+      "tomorrow",
+      "evening"
+    ],
+    "mustNotContain": [
+      "kartoys",
+      "udya",
+      "sandhyakali",
+      "ahes",
+      "chaha",
+      "pyayla"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Romanized Marathi: kay kartoys is what are you doing, udya is tomorrow, sandhyakali is in the evening, chaha is tea"
+  },
+  {
+    "id": "improve-mr-1",
+    "group": "IMPROVE mr",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "मी उद्या सकाळी ऑफिसला येतो तू पण ये जेवण सोबत करू",
+    "expected": "मी उद्या सकाळी ऑफिसला येतो, तू पण ये. जेवण सोबत करू.",
+    "mustContain": [
+      "उद्या",
+      "सकाळी"
+    ],
+    "mustNotContain": [],
+    "script": "Devanagari",
+    "keep": [],
+    "note": "Marathi stays Marathi (not Hindi); add comma and full stop"
+  },
+  {
+    "id": "gu-native-1",
+    "group": "NATIVE gu",
+    "action": "NATIVE",
+    "target": "gu",
+    "text": "hu kale ofis nahi aavi shaku, tabiyat saari nathi. tame meeting jovi leso",
+    "expected": "હું કાલે ઓફિસ નહીં આવી શકું, તબિયત સારી નથી. તમે મીટિંગ જોઈ લેજો.",
+    "mustContain": [
+      "કાલ",
+      "નથી"
+    ],
+    "mustNotContain": [
+      "kale",
+      "ofis",
+      "nahi",
+      "aavi",
+      "shaku",
+      "tabiyat",
+      "nathi",
+      "leso"
+    ],
+    "script": "Gujarati",
+    "keep": [],
+    "note": "ofis is a short spelling of office; leso is લેજો; કાલ also matches કાલે; ઓફિસ and મીટિંગ may be Gujarati script"
+  },
+  {
+    "id": "en-gu-1",
+    "group": "ENGLISH romanized gu",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "gu",
+    "text": "kem cho? aaje raate jamva kya jaishu? mane bahu bhuk lagi chhe",
+    "expected": "How are you? Where shall we go to eat tonight? I am very hungry.",
+    "mustContain": [
+      "where",
+      "hungry"
+    ],
+    "mustNotContain": [
+      "kem",
+      "jamva",
+      "jaishu",
+      "bahu",
+      "bhuk",
+      "chhe"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Romanized Gujarati: kem cho is how are you, jamva kya jaishu is where shall we go to eat, bhuk lagi chhe is I am hungry"
+  },
+  {
+    "id": "improve-gu-1",
+    "group": "IMPROVE gu",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "હું કાલે સવારે ઓફિસ આવીશ તમે પણ આવજો સાથે જમવા જઈશું",
+    "expected": "હું કાલે સવારે ઓફિસ આવીશ, તમે પણ આવજો. સાથે જમવા જઈશું.",
+    "mustContain": [
+      "કાલ",
+      "સવાર"
+    ],
+    "mustNotContain": [],
+    "script": "Gujarati",
+    "keep": [],
+    "note": "Gujarati stays Gujarati; add comma and full stop"
+  },
+  {
+    "id": "pa-native-1",
+    "group": "NATIVE pa",
+    "action": "NATIVE",
+    "target": "pa",
+    "text": "main kl ghar aunga, tusi vi aa jao. roti ikathe khavange",
+    "expected": "ਮੈਂ ਕੱਲ੍ਹ ਘਰ ਆਵਾਂਗਾ, ਤੁਸੀਂ ਵੀ ਆ ਜਾਓ। ਰੋਟੀ ਇਕੱਠੇ ਖਾਵਾਂਗੇ।",
+    "mustContain": [
+      "ਘਰ",
+      "ਰੋਟੀ"
+    ],
+    "mustNotContain": [
+      "kl",
+      "ghar",
+      "aunga",
+      "tusi",
+      "roti",
+      "ikathe",
+      "khavange"
+    ],
+    "script": "Gurmukhi",
+    "keep": [],
+    "note": "Punjabi in Gurmukhi (not Shahmukhi or Devanagari); kl is kal; ਕੱਲ੍ਹ has several spellings (ਕੱਲ, ਕੱਲ੍ਹ), so only ਘਰ and ਰੋਟੀ are required"
+  },
+  {
+    "id": "en-pa-1",
+    "group": "ENGLISH romanized pa",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "pa",
+    "text": "tusi kithe ho? assi tuhadi udeek kar rahe aan, jldi aao",
+    "expected": "Where are you? We are waiting for you, come quickly.",
+    "mustContain": [
+      "where",
+      "wait"
+    ],
+    "mustNotContain": [
+      "kithe",
+      "tusi",
+      "udeek",
+      "jldi",
+      "tuhadi"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Romanized Punjabi: kithe is where, udeek kar rahe is waiting, jldi is jaldi"
+  },
+  {
+    "id": "improve-pa-1",
+    "group": "IMPROVE pa",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "ਮੈਂ ਅੱਜ ਬਹੁਤ ਥੱਕ ਗਿਆ ਹਾਂ ਯਾਰ ਤੂੰ ਕੱਲ੍ਹ ਘਰ ਆ ਜਾਵੀਂ ਰੋਟੀ ਇਕੱਠੇ ਖਾਵਾਂਗੇ",
+    "expected": "ਮੈਂ ਅੱਜ ਬਹੁਤ ਥੱਕ ਗਿਆ ਹਾਂ ਯਾਰ। ਤੂੰ ਕੱਲ੍ਹ ਘਰ ਆ ਜਾਵੀਂ, ਰੋਟੀ ਇਕੱਠੇ ਖਾਵਾਂਗੇ।",
+    "mustContain": [
+      "ਘਰ",
+      "ਰੋਟੀ"
+    ],
+    "mustNotContain": [],
+    "script": "Gurmukhi",
+    "keep": [],
+    "note": "Gurmukhi stays Gurmukhi; add the danda ।"
+  },
+  {
+    "id": "ml-native-1",
+    "group": "NATIVE ml",
+    "action": "NATIVE",
+    "target": "ml",
+    "text": "njn nale office il varilla, sugam illa. nee meeting nokkikko",
+    "expected": "ഞാൻ നാളെ ഓഫീസിൽ വരില്ല, സുഖമില്ല. നീ മീറ്റിംഗ് നോക്കിക്കോ.",
+    "mustContain": [
+      "നാളെ"
+    ],
+    "mustNotContain": [
+      "njn",
+      "nale",
+      "varilla",
+      "sugam",
+      "nokkikko"
+    ],
+    "script": "Malayalam",
+    "keep": [],
+    "note": "Manglish: njn is njan; only നാളെ is required because ഞാൻ can be encoded with an atomic chillu or the older sequence and the two do not compare equal; ഓഫീസിൽ may be written either way"
+  },
+  {
+    "id": "en-ml-1",
+    "group": "ENGLISH romanized ml",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "ml",
+    "text": "ninakku sugam ano? ippo evideya? njan ivide waiting aanu, vegam vaa",
+    "expected": "Are you okay? Where are you now? I am waiting here, come quickly.",
+    "mustContain": [
+      "where",
+      "wait"
+    ],
+    "mustNotContain": [
+      "ninakku",
+      "sugam",
+      "evideya",
+      "ippo",
+      "vegam",
+      "ivide"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Manglish: evideya is where is it/are you, vegam vaa is come quickly; waiting is already English in the text"
+  },
+  {
+    "id": "improve-ml-1",
+    "group": "IMPROVE ml",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "ഞാൻ നാളെ രാവിലെ ഓഫീസിൽ വരാം നീയും വാ ഒരുമിച്ച് ഭക്ഷണം കഴിക്കാം",
+    "expected": "ഞാൻ നാളെ രാവിലെ ഓഫീസിൽ വരാം, നീയും വാ. ഒരുമിച്ച് ഭക്ഷണം കഴിക്കാം.",
+    "mustContain": [
+      "നാളെ",
+      "രാവിലെ"
+    ],
+    "mustNotContain": [],
+    "script": "Malayalam",
+    "keep": [],
+    "note": "Malayalam stays Malayalam; add comma and full stop"
+  },
+  {
+    "id": "kn-native-1",
+    "group": "NATIVE kn",
+    "action": "NATIVE",
+    "target": "kn",
+    "text": "nanu nale office ge baralla, mai hushaar illa. neenu meeting nodkoli",
+    "expected": "ನಾನು ನಾಳೆ ಆಫೀಸ್‌ಗೆ ಬರಲ್ಲ, ಮೈ ಹುಷಾರಿಲ್ಲ. ನೀನು ಮೀಟಿಂಗ್ ನೋಡ್ಕೋ.",
+    "mustContain": [
+      "ನಾಳೆ",
+      "ನೀನು"
+    ],
+    "mustNotContain": [
+      "nanu",
+      "nale",
+      "baralla",
+      "hushaar",
+      "nodkoli"
+    ],
+    "script": "Kannada",
+    "keep": [],
+    "note": "Spoken Kannada: baralla is ಬರಲ್ಲ (will not come), mai hushaar illa is I am unwell; nale is ನಾಳೆ; ಆಫೀಸ್ and ಮೀಟಿಂಗ್ may be Kannada script"
+  },
+  {
+    "id": "en-kn-1",
+    "group": "ENGLISH romanized kn",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "kn",
+    "text": "yelli iddiya? naanu ninna jothe matadbeku, swalpa call madu",
+    "expected": "Where are you? I need to talk to you, give me a call.",
+    "mustContain": [
+      "where",
+      "call"
+    ],
+    "mustNotContain": [
+      "yelli",
+      "iddiya",
+      "jothe",
+      "matadbeku",
+      "madu",
+      "swalpa"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Romanized Kannada: yelli iddiya is where are you, matadbeku is need to talk, call madu is make a call"
+  },
+  {
+    "id": "improve-kn-1",
+    "group": "IMPROVE kn",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "ನಾನು ನಾಳೆ ಬೆಳಗ್ಗೆ ಆಫೀಸ್ ಗೆ ಬರ್ತೀನಿ ನೀನು ಕೂಡ ಬಾ ಒಟ್ಟಿಗೆ ಊಟ ಮಾಡೋಣ",
+    "expected": "ನಾನು ನಾಳೆ ಬೆಳಗ್ಗೆ ಆಫೀಸ್‌ಗೆ ಬರ್ತೀನಿ, ನೀನು ಕೂಡ ಬಾ. ಒಟ್ಟಿಗೆ ಊಟ ಮಾಡೋಣ.",
+    "mustContain": [
+      "ನಾಳೆ",
+      "ಊಟ"
+    ],
+    "mustNotContain": [],
+    "script": "Kannada",
+    "keep": [],
+    "note": "Spoken Kannada stays spoken; add comma and full stop; ಬೆಳಗ್ಗೆ/ಬೆಳಿಗ್ಗೆ variants are not required"
+  },
+  {
+    "id": "or-native-1",
+    "group": "NATIVE or",
+    "action": "NATIVE",
+    "target": "or",
+    "text": "mu aji office jauni, sarira bhal nahin. tume meeting dekhi nia",
+    "expected": "ମୁଁ ଆଜି ଅଫିସ ଯାଉନି, ଶରୀର ଭଲ ନାହିଁ। ତୁମେ ମିଟିଂ ଦେଖି ନିଅ।",
+    "mustContain": [
+      "ଆଜି",
+      "ଭଲ"
+    ],
+    "mustNotContain": [
+      "aji",
+      "jauni",
+      "sarira",
+      "bhal",
+      "nahin",
+      "tume",
+      "dekhi",
+      "nia"
+    ],
+    "script": "Oriya",
+    "keep": [],
+    "note": "Romanized Odia: aji is today (note kali means both yesterday and tomorrow, so it is avoided), bhal nahin is not well. Odia romanization is less standardized, so only two very common words are required; Odia script, not Bangla"
+  },
+  {
+    "id": "en-or-1",
+    "group": "ENGLISH romanized or",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "or",
+    "text": "tume kemiti achha? aji ghara ku asiba ki? mu tumaku dekhibaku chahuchi",
+    "expected": "How are you? Will you come home today? I want to see you.",
+    "mustContain": [
+      "how",
+      "today"
+    ],
+    "mustNotContain": [
+      "kemiti",
+      "achha",
+      "ghara",
+      "asiba",
+      "tumaku",
+      "dekhibaku",
+      "chahuchi"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Romanized Odia: kemiti achha is how are you, aji is today, ghara is home; Odia romanization is less standardized, so only how and today are required"
+  },
+  {
+    "id": "improve-or-1",
+    "group": "IMPROVE or",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "ମୁଁ ଆଜି ସକାଳେ ଘରୁ ବାହାରିଛି ତୁମେ ବି ଆସ ଏକାଠି ଖାଇବା",
+    "expected": "ମୁଁ ଆଜି ସକାଳେ ଘରୁ ବାହାରିଛି, ତୁମେ ବି ଆସ। ଏକାଠି ଖାଇବା।",
+    "mustContain": [
+      "ସକାଳ",
+      "ଘର"
+    ],
+    "mustNotContain": [],
+    "script": "Oriya",
+    "keep": [],
+    "note": "Odia stays Odia; add the Odia full stop ।; ସକାଳ and ଘର also match ସକାଳେ and ଘରୁ"
+  },
+  {
+    "id": "as-native-1",
+    "group": "NATIVE as",
+    "action": "NATIVE",
+    "target": "as",
+    "text": "moi aji ghorot asu, tumi kot asa? bhat khali neki?",
+    "expected": "মই আজি ঘৰত আছোঁ, তুমি ক'ত আছা? ভাত খালা নেকি?",
+    "mustContain": [
+      "মই",
+      "আজি"
+    ],
+    "mustNotContain": [
+      "moi",
+      "aji",
+      "ghorot",
+      "kot",
+      "bhat",
+      "khali",
+      "neki"
+    ],
+    "script": "Bengali",
+    "keep": [],
+    "note": "Romanized Assamese; Assamese uses the same Bengali-Assamese script block (script BENGALI). Assamese-only letters ৰ and ৱ are not required because a model may fall back to Bangla র; মই is Assamese for I"
+  },
+  {
+    "id": "en-as-1",
+    "group": "ENGLISH romanized as",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "as",
+    "text": "tumi kenekoi asa? moi bhal asu. ketiya aahibo?",
+    "expected": "How are you? I am fine. When will you come?",
+    "mustContain": [
+      "how",
+      "when"
+    ],
+    "mustNotContain": [
+      "tumi",
+      "kenekoi",
+      "asu",
+      "ketiya",
+      "aahibo",
+      "moi"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Romanized Assamese: kenekoi is how, ketiya is when, aahibo is will come"
+  },
+  {
+    "id": "improve-as-1",
+    "group": "IMPROVE as",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "মই আজি অফিচলৈ যাব নোৱাৰো গাটো ভাল নাই তুমি মিটিংটো চাই লবা",
+    "expected": "মই আজি অফিচলৈ যাব নোৱাৰোঁ, গাটো ভাল নাই। তুমি মিটিংটো চাই লবা।",
+    "mustContain": [
+      "আজি",
+      "ভাল"
+    ],
+    "mustNotContain": [],
+    "script": "Bengali",
+    "keep": [],
+    "note": "Assamese stays Assamese (ভাল, not Bangla ভালো; ৰ stays ৰ); add comma and full stop"
+  },
+  {
+    "id": "ar-native-1",
+    "group": "NATIVE ar",
+    "action": "NATIVE",
+    "target": "ar",
+    "text": "ana bokra msh hagi el shoghl, ta3ban shwaya. 2ol lel modeer",
+    "expected": "أنا بكرة مش هاجي الشغل، تعبان شوية. قول للمدير.",
+    "mustContain": [
+      "بكر",
+      "تعبان"
+    ],
+    "mustNotContain": [
+      "bokra",
+      "msh",
+      "hagi",
+      "shoghl",
+      "ta3ban",
+      "shwaya",
+      "modeer"
+    ],
+    "script": "Arabic",
+    "keep": [],
+    "note": "Egyptian Arabizi (3 is ع, 2 is ء/أ): msh is مش, bokra is بكرة; the dialect should stay Egyptian. بكر also matches بكرة and بكره; only two very common words are required"
+  },
+  {
+    "id": "en-ar-1",
+    "group": "ENGLISH romanized ar",
+    "action": "ENGLISH",
+    "target": null,
+    "romanized": "ar",
+    "text": "ezayak? ana 3ayez a2abelak bokra, enta fady el sa3a kam?",
+    "expected": "How are you? I want to meet you tomorrow, are you free? What time?",
+    "mustContain": [
+      "how",
+      "tomorrow"
+    ],
+    "mustNotContain": [
+      "ezayak",
+      "3ayez",
+      "a2abelak",
+      "bokra",
+      "fady"
+    ],
+    "script": "Latin",
+    "keep": [],
+    "note": "Egyptian Arabizi: ezayak is how are you, 3ayez is I want, a2abelak is meet you, bokra is tomorrow, el sa3a kam is what time"
+  },
+  {
+    "id": "improve-ar-1",
+    "group": "IMPROVE ar",
+    "action": "IMPROVE",
+    "target": null,
+    "text": "انا مش هقدر اجي بكرة عندي شغل كتير ممكن نتقابل بعد بكرة",
+    "expected": "أنا مش هقدر أجي بكرة، عندي شغل كتير. ممكن نتقابل بعد بكرة؟",
+    "mustContain": [
+      "شغل",
+      "بكر"
+    ],
+    "mustNotContain": [],
+    "script": "Arabic",
+    "keep": [],
+    "note": "Egyptian Arabic stays Egyptian (not formal Arabic): add hamza, punctuation and the Arabic question mark ؟"
   }
 ]
