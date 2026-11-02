@@ -84,7 +84,7 @@ class GemtypeCoreTest {
     @Test fun requestBodyUsesTheActionPromptAndThinkingLevel() {
         val body = GeminiProtocol.requestBody("hello", Action.FIX, "auto", "MINIMAL")
         val system = body.getJSONObject("systemInstruction").getJSONArray("parts").getJSONObject(0).getString("text")
-        assertTrue(system.startsWith("Fix all grammar"))
+        assertTrue(system.startsWith("Correct the grammar, spelling and punctuation"))
         assertTrue(system.contains("Preserve the language"))
         val gen = body.getJSONObject("generationConfig")
         assertEquals("MINIMAL", gen.getJSONObject("thinkingConfig").getString("thinkingLevel"))
@@ -109,9 +109,10 @@ class GemtypeCoreTest {
     @Test fun nativeScriptPromptNamesTheTargetLanguage() {
         val body = GeminiProtocol.requestBody("ami kal ashbo na", Action.NATIVE, "auto", "MINIMAL", "Bangla")
         val system = systemOf(body)
-        assertTrue(system.startsWith("The text is Bangla written with English (Latin) letters, possibly mixed with English words."))
-        assertTrue(system.contains("Rewrite it in Bangla using its native script with correct, natural spelling and punctuation."))
-        assertTrue(system.contains("Do not translate it into another language or change its meaning."))
+        assertTrue(system.startsWith("The text is Bangla typed with English (Latin) letters, quickly and possibly with typos"))
+        assertTrue(system.contains("Work out what the writer means, then write it as correct, natural Bangla in its native script"))
+        assertTrue(system.contains("Fix mistakes silently."))
+        assertTrue(system.contains("Do not add new content, change the meaning or tone, or translate it into another language."))
         assertTrue(system.contains("Keep names, brands, URLs, numbers, emoji and words normally written in English as they are."))
         assertTrue(system.endsWith("Return only the resulting text — no preamble, no quotes, no markdown."))
         assertFalse(system.contains("{language}"))
@@ -132,7 +133,9 @@ class GemtypeCoreTest {
     @Test fun translateToEnglishPrompt() {
         val system = systemOf(GeminiProtocol.requestBody("ami kal ashbo na", Action.ENGLISH, "Hindi", "LOW", "ignored"))
         assertEquals(
-            "Translate the text into natural, fluent English. Keep names, URLs, numbers and emoji. " +
+            "The text may be in any language or a mix, in any script including English letters (romanized), with typos and broken grammar. " +
+                "Work out what the writer means, then write it as correct, natural, fluent English with the same meaning and tone. " +
+                "Do not add anything. Keep names, URLs, numbers and emoji. " +
                 "Return only the resulting text — no preamble, no quotes, no markdown.",
             system,
         )
@@ -155,7 +158,7 @@ class GemtypeCoreTest {
             HttpResult(200, ok("{\"rewritten\":\"আমি কাল আসবো না\"}"))
         }
         assertEquals("আমি কাল আসবো না", runBlocking { client.refine("ami kal ashbo na", Action.NATIVE, config, "Bangla") })
-        assertTrue(systemOf(bodies.single()).contains("Rewrite it in Bangla"))
+        assertTrue(systemOf(bodies.single()).contains("natural Bangla in its native script"))
     }
 
     private fun ok(text: String) = JSONObject().put(

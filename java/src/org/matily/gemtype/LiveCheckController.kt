@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import org.matily.gemtype.core.Correction
 import org.matily.gemtype.core.LiveCheck
 import org.matily.gemtype.core.LiveCheckState
+import org.matily.gemtype.core.Romanized
 
 /**
  * "Check as you type": [LiveCheck.DEBOUNCE_MS] after typing pauses, sends the field's text to Gemini for
@@ -119,12 +120,33 @@ class LiveCheckController(private val badge: GemTypeBadge, private val host: Hos
             return publish(emptyList())
         }
         val text = field.text
+        // Only English is checked as you type; the word lists are needed to tell it from Banglish and the like.
+        val romanized = if (LiveCheck.applies(text, false)) isRomanized(text) ?: return loadLists() else false
+        val decision = state.decide(text, SystemClock.elapsedRealtime(), romanized)
+        if (decision == LiveCheck.Decision.Off) {
+            state.reset()
+            return publish(emptyList())
+        }
         publish(state.refresh(text))
-        when (val decision = state.decide(text, SystemClock.elapsedRealtime())) {
+        when (decision) {
             LiveCheck.Decision.Check -> check(text)
             is LiveCheck.Decision.Later -> handler.postDelayed(evaluate, decision.afterMs)
-            LiveCheck.Decision.Skip -> {}
+            else -> {}
         }
+    }
+
+    /** Whether [text] seems to be a language typed with English letters; null while the word lists are not loaded. */
+    private fun isRomanized(text: String): Boolean? {
+        val lists = RomanizedLists.peek() ?: return null
+        val found = Romanized.detect(
+            text.take(GemTypePanelController.DETECT_CHARS), ConvertPrefs.convertTo(context), lists::get, host.englishCheck(),
+        )
+        return found.isNotEmpty()
+    }
+
+    /** First use: read the lists off the main thread, then look again. */
+    private fun loadLists() {
+        scope.launch { runCatching { RomanizedLists.load(context) }.onSuccess { schedule() } }
     }
 
     private fun check(text: String) {

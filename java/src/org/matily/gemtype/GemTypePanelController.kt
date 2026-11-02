@@ -32,6 +32,7 @@ import kotlinx.coroutines.withContext
 import org.matily.gemtype.core.Action
 import org.matily.gemtype.core.Correction
 import org.matily.gemtype.core.Corrections
+import org.matily.gemtype.core.FixMode
 import org.matily.gemtype.core.GeminiException
 import org.matily.gemtype.core.Romanized
 
@@ -68,7 +69,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         /** The language being typed on the keyboard (its English name), a hint for Fix when the writing language is auto. */
         fun keyboardLanguage(): String? = null
 
-        /** The mistakes "check as you type" already found in exactly [text], if it has; Fix then needs no request. */
+        /** The mistakes "check as you type" already found in exactly [text] (English only), if it has; Fix then needs no request. */
         fun cachedCheck(text: String): List<Correction>? = null
 
         /** Replace [field] with [result] went through and the panel is closed: offer Undo. */
@@ -93,7 +94,9 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private var mode = Pick(Action.FIX)
     private val results = HashMap<Pick, String>()
 
-    // Fix is a list of corrections, not a rewrite: what Gemini found, and which of them the user skipped.
+    // English Fix is a list of corrections (what Gemini found, and which of them the user skipped); any other
+    // text gets the rewrite, like the other chips. Decided in startFix once the text has been looked at.
+    private var fixMode = FixMode.REWRITE
     private var fixes: List<Correction>? = null
     private val skipped = HashSet<Int>()
     private var error: String? = null
@@ -231,6 +234,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private fun reset() {
         results.clear()
         fixes = null
+        fixMode = FixMode.REWRITE
         skipped.clear()
         error = null
         loading = false
@@ -254,9 +258,11 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
                     // Text typed in English letters that looks like one of the user's languages: convert it first, not Fix.
                     val native = detectLanguages()
                     setChips(native)
+                    // English is proofread; Bangla, Hindi, mixed and romanized text is rewritten.
+                    fixMode = FixMode.of(source, native.isNotEmpty())
                     val first = native.firstOrNull()?.let { Pick(Action.NATIVE, it.language) } ?: Pick(Action.FIX)
                     // "Check as you type" may have checked exactly this text already: no second request.
-                    val cached = if (first.action == Action.FIX && !external) host.cachedCheck(source) else null
+                    val cached = if (proofreading(first) && !external) host.cachedCheck(source) else null
                     if (cached != null) {
                         mode = first
                         fixes = cached
@@ -316,15 +322,18 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         return Romanized.order(found, ConvertPrefs.lastLanguage(context))
     }
 
-    /** What Replace, Copy and Share use: the rewrite, or for Fix the text with the corrections not skipped applied. */
+    /** [pick] is Fix on English text: a list of corrections, not a rewrite. */
+    private fun proofreading(pick: Pick) = pick.action == Action.FIX && fixMode == FixMode.PROOFREAD
+
+    /** What Replace, Copy and Share use: the rewrite, or for English Fix the text with the corrections not skipped applied. */
     private fun currentResult(): String? {
         val found = fixes
-        return if (mode.action == Action.FIX && found != null) {
+        return if (proofreading(mode) && found != null) {
             Corrections.apply(source, found.filterIndexed { i, _ -> i !in skipped })
         } else results[mode]
     }
 
-    private fun hasResult(pick: Pick) = if (pick.action == Action.FIX) fixes != null else results.containsKey(pick)
+    private fun hasResult(pick: Pick) = if (proofreading(pick)) fixes != null else results.containsKey(pick)
 
     /** The ✕ / ↺ on a Fix row: skip that correction, or put it back. */
     private fun toggleFix(index: Int) {
@@ -388,7 +397,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         try {
             val config = withContext(Dispatchers.IO) { GemTypeSettings.load(context) }
             val target = pick.language?.let { Romanized.englishName(it) }
-            if (pick.action == Action.FIX) {
+            if (proofreading(pick)) {
                 fixes = GemType.client.check(text, config, host.keyboardLanguage())
                 skipped.clear()
             } else {
@@ -455,7 +464,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             return
         }
 
-        val found = fixes.takeIf { mode.action == Action.FIX }
+        val found = fixes.takeIf { proofreading(mode) }
         val result = currentResult()
         when {
             found != null && found.isEmpty() -> {
@@ -463,7 +472,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
                 textView.setText(R.string.gemtype_looks_good)
             }
             found != null -> showFixes(found)
-            result != null -> textView.text = result
+            // A rewrite Fix shows what changed; the other rewrites show the new text.
+            result != null -> textView.text = if (mode.action == Action.FIX) DiffSpans.build(source, result, diffColors) else result
             error != null -> {
                 textView.text = error
                 textView.setTextColor(errorColor)
@@ -568,7 +578,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
     companion object {
         /** How much of the text is looked at to guess whether it is romanized (words are cheap to count, but not unlimited). */
-        private const val DETECT_CHARS = 2_000
+        internal const val DETECT_CHARS = 2_000
         private const val ACCENT = 0xFF2F6FD1.toInt()
     }
 }

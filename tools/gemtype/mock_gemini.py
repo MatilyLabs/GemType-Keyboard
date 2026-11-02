@@ -11,7 +11,7 @@ itself is never printed). Replies use the same structured-JSON shape the app
 asks Gemini for: {"rewritten": "..."}, or {"corrections": [...]} for the proofreader
 (request schema has "corrections"): fixed demo corrections for "i dont think we can make it friday sorry",
 a few common typos otherwise, an empty list for text with none. Failure cases for the Test key button:
-"native script" prompts -> a fixed sentence in the language named in the prompt, "Translate" -> English;
+"native script" prompts -> a fixed sentence in the language named in the prompt, the English prompt ("The text may be in any language...") -> English;
 key "bad-key" -> 400 invalid key; any model id not starting "gemini-3" -> 404.
 Failure modes keyed by the API key (a key that merely contains the word, e.g. AIzaMOCKRATE000000000000000000000000000):
 RATE -> 429, BUSY -> 503, LOCATION -> 400 "User location is not supported" (what Google says to unsupported regions, VPNs included), SLOW -> answers only after 40 s (MOCK_SLOW=n to change), GARBAGE -> 200 with a body that is not JSON.
@@ -26,7 +26,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 # Canned rewrites keyed by the first words of each action's prompt.
 DEMO = {
-    "Fix all": "I don't think we can make it on Friday, sorry.",
+    "Correct the grammar": "I don't think we can make it on Friday, sorry.",
     "Rewrite the text to be clearer": "Unfortunately, I don't think we'll be able to make it on Friday. Sorry about that!",
     "Rewrite the text to be significantly": "Sorry, we can't make Friday.",
     "Rewrite the text in a professional": "I regret that we will be unable to attend on Friday. My apologies.",
@@ -34,7 +34,7 @@ DEMO = {
 }
 
 
-# "Native script" requests name the language in the system prompt ("The text is Bangla written ...").
+# "Native script" requests name the language in the system prompt ("The text is Bangla typed with English letters ...").
 NATIVE = {
     "bangla": "আমি কাল আসবো না।", "bengali": "আমি কাল আসবো না।",
     "hindi": "मैं कल आऊँगा।", "urdu": "میں کل آؤں گا۔", "nepali": "म भोलि आउँछु।",
@@ -104,11 +104,11 @@ class Handler(BaseHTTPRequestHandler):
         text = body["contents"][0]["parts"][0]["text"].removeprefix("TEXT:\n")
         out = next((v for k, v in DEMO.items() if system.startswith(k)), text)
         if "native script" in system:
-            language = system.split("The text is ")[1].split(" written")[0].lower()
+            language = system.split("The text is ")[1].split(" typed")[0].lower()
             out = NATIVE.get(language, "[" + language + "] " + text)
-        elif system.startswith("Translate"):
+        elif system.startswith("The text may be in any language"):
             out = "I will not come tomorrow."
-        if system.startswith("Fix all") and "friday" not in text.lower():
+        if system.startswith("Correct the grammar") and "friday" not in text.lower():
             out = text[:1].upper() + text[1:].replace(" i ", " I ").replace("dont", "don't").rstrip(".") + "."
             for typo, fix in TYPOS.items():
                 out = out.replace(typo, fix)

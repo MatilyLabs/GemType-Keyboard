@@ -11,6 +11,9 @@ object LiveCheck {
     /** After any error (a 429 included) no check is sent for this long. */
     const val ERROR_PAUSE_MS = 60_000L
 
+    /** Check as you type is for English only: other languages get the rewrite-style Fix, which needs a tap. */
+    fun applies(text: String, romanized: Boolean): Boolean = FixMode.of(text, romanized) == FixMode.PROOFREAD
+
     fun wordCount(text: String): Int = Romanized.words(text).size
 
     /** True when the cursor is inside a word: the character before it is a letter, digit or combining mark (an Indic vowel sign). */
@@ -65,6 +68,9 @@ object LiveCheck {
         object Skip : Decision()
         object Check : Decision()
 
+        /** The text is not English: nothing to ask, and no badge or chip. */
+        object Off : Decision()
+
         /** Wanted, but paused: look again after [afterMs]. */
         class Later(val afterMs: Long) : Decision()
     }
@@ -89,8 +95,12 @@ class LiveCheckState {
     var corrections: List<Correction> = emptyList()
         private set
 
-    /** Should a request for [text] go out now? Not when it is short, one is out, it was already asked, or an error pause is on. */
-    fun decide(text: String, now: Long): LiveCheck.Decision = when {
+    /**
+     * Should a request for [text] go out now? Never for text that is not English ([romanized]: a language was
+     * detected in its Latin letters). Not when it is short, one is out, it was already asked, or an error pause is on.
+     */
+    fun decide(text: String, now: Long, romanized: Boolean = false): LiveCheck.Decision = when {
+        !LiveCheck.applies(text, romanized) -> LiveCheck.Decision.Off
         LiveCheck.wordCount(text) < LiveCheck.MIN_WORDS || inFlight || text == lastText -> LiveCheck.Decision.Skip
         now < pausedUntil -> LiveCheck.Decision.Later(pausedUntil - now)
         else -> LiveCheck.Decision.Check

@@ -62,6 +62,23 @@ class LiveCheckTest {
         assertTrue(state.decide("x y z", 5_000) is LiveCheck.Decision.Later)
     }
 
+    @Test fun `only English is checked as you type`() {
+        val state = LiveCheckState()
+        assertSame(LiveCheck.Decision.Check, state.decide("i dont think we can make it", 0))
+        assertSame(LiveCheck.Decision.Off, state.decide("আমি কাল অফিসে যাব না", 0))
+        assertSame(LiveCheck.Decision.Off, state.decide("मैं कल नहीं आऊंगा", 0))
+        assertSame(LiveCheck.Decision.Off, state.decide("আমি kal office jabo na", 0))
+        // Banglish is Latin letters: the caller says a language was found in it.
+        assertSame(LiveCheck.Decision.Off, state.decide("ami kal ashbo na", 0, romanized = true))
+    }
+
+    @Test fun `text that is not English is never asked, however long, busy or paused`() {
+        val state = LiveCheckState()
+        state.fail(state.start("a b c"), 0)
+        assertSame(LiveCheck.Decision.Off, state.decide("আমি কাল অফিসে যাব না", 1))
+        assertTrue(state.decide("a b c d", 1) is LiveCheck.Decision.Later)
+    }
+
     // ---- stale answers and the cache ----------------------------------------------------
 
     @Test fun `an answer after a reset is dropped and does not free the new request`() {

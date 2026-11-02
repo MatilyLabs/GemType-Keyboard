@@ -9,7 +9,9 @@ package org.matily.gemtype.core
 enum class Action(val label: String, val resultLabel: String, val prompt: String) {
     FIX(
         "Fix", "Suggested fix",
-        "Fix all grammar, spelling, and punctuation errors. Change nothing else — keep the wording, tone, and formatting.",
+        "Correct the grammar, spelling and punctuation of the text, and fix clearly awkward or unnatural phrasing so it reads naturally to a native speaker. " +
+            "Keep the meaning, tone and length, and keep the writer's own words where they are already fine. " +
+            "In text that mixes languages, keep the English words as they are. Keep the script and formatting of the text.",
     ),
     IMPROVE(
         "Improve", "Improved",
@@ -31,15 +33,18 @@ enum class Action(val label: String, val resultLabel: String, val prompt: String
     /** Text typed with English letters -> its own language in its native script; `{language}` is filled in by [prompt]. */
     NATIVE(
         "Native script", "In native script",
-        "The text is {language} written with English (Latin) letters, possibly mixed with English words. " +
-            "Rewrite it in {language} using its native script with correct, natural spelling and punctuation. " +
-            "Do not translate it into another language or change its meaning. " +
+        "The text is {language} typed with English (Latin) letters, quickly and possibly with typos, missing letters, wrong spellings, " +
+            "broken grammar and English words mixed in. Work out what the writer means, then write it as correct, natural {language} " +
+            "in its native script, with proper spelling, grammar and punctuation (its own sentence end, such as \"।\", where the language uses one). " +
+            "Fix mistakes silently. Do not add new content, change the meaning or tone, or translate it into another language. " +
             "Keep names, brands, URLs, numbers, emoji and words normally written in English as they are.",
     ),
     ENGLISH(
         "English", "In English",
-        "Translate the text into natural, fluent English. Keep names, URLs, numbers and emoji.",
-    );
+        "The text may be in any language or a mix, in any script including English letters (romanized), with typos and broken grammar. " +
+            "Work out what the writer means, then write it as correct, natural, fluent English with the same meaning and tone. " +
+            "Do not add anything. Keep names, URLs, numbers and emoji.",
+        );
 
     /** These two change the language on purpose, so the "keep the text's language" line is left out of their request. */
     val changesLanguage: Boolean get() = this == NATIVE || this == ENGLISH
