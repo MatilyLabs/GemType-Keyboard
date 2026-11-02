@@ -48,7 +48,7 @@ TYPOS = {"Ths": "This", "tst": "test", "teh": "the", "recieve": "receive"}
 # Proofreader answers. Each: (regex over the text, replacement, explanation, type). Only the first
 # match of each rule is reported, and "original" is copied from the text, as the real model does.
 CHECKS = [
-    (r"\bit friday sorry\b", "it on Friday, sorry.", "Missing 'on' and punctuation.", "punctuation"),
+    (r"(?i)\bit friday sorry\b", "it on Friday, sorry.", "Missing 'on' and punctuation.", "punctuation"),
     (r"^i\b", "I", "The pronoun 'I' is always capital.", "grammar"),
     (r"\bdont\b", "don't", "Missing apostrophe.", "spelling"),
     (r"\bim\b", "I'm", "Missing apostrophe.", "spelling"),

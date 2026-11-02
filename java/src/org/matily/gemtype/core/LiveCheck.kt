@@ -54,8 +54,16 @@ object LiveCheck {
         return placed.none { start < it.end && end > it.start }
     }
 
-    /** "tmk → tomake": a correction as one short line (each side isolated so an RTL word cannot reorder the arrow). */
-    fun chipLabel(c: Correction): String = "⁨${c.original}⁩ → ⁨${c.replacement}⁩"
+    /**
+     * "tmk → tomake": a correction as one short line (each side isolated so an RTL word cannot reorder the arrow).
+     * When both sides don't fit in a chip, only "→ new" is shown, since the new text is what the tap writes.
+     */
+    fun chipLabel(c: Correction): String =
+        if (c.original.length + c.replacement.length <= CHIP_FULL_CHARS) "⁨${c.original}⁩ → ⁨${c.replacement}⁩"
+        else "→ ⁨${c.replacement}⁩"
+
+    /** Roughly what fits in the chip's width with the arrow. */
+    private const val CHIP_FULL_CHARS = 18
 
     /** What the strip should do next about [text]. */
     sealed class Decision {

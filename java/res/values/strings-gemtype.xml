@@ -25,7 +25,11 @@
         <item quantity="one">%1$d fix</item>
         <item quantity="other">%1$d fixes</item>
     </plurals>
-    <string name="gemtype_fixes_partial">%1$d of %2$d fixes</string>
+    <!-- Some fixes skipped: "2 of 3 fixes"; the quantity follows the total (the second number). -->
+    <plurals name="gemtype_fixes_partial">
+        <item quantity="one">%1$d of %2$d fix</item>
+        <item quantity="other">%1$d of %2$d fixes</item>
+    </plurals>
     <string name="gemtype_fix_skip">Skip this fix</string>
     <string name="gemtype_fix_restore">Restore this fix</string>
     <string name="gemtype_type_grammar">Grammar</string>

@@ -59,6 +59,12 @@ class LiveCheckController(private val badge: GemTypeBadge, private val host: Hos
     /** Typing or a cursor move. */
     fun onSelectionUpdate() = schedule()
 
+    /** GemType changed the text (Replace, the chip, a conversion): drop the fixed mistakes from the badge now. */
+    fun onReplaced() {
+        handler.postDelayed(refreshBadge, REPLACED_SETTLE_MS)
+        schedule()
+    }
+
     /** Input finished: drop the request and the badge. */
     fun onFinishInput() = reset()
 
@@ -70,7 +76,8 @@ class LiveCheckController(private val badge: GemTypeBadge, private val host: Hos
     // ---- what the panel and the strip ask --------------------------------------------------
 
     /** The answer for exactly [text], for the Fix panel to show without asking again. */
-    fun cached(text: String): List<Correction>? = if (active()) state.cached(text) else null
+    // The panel asks while it opens, so the panel check in active() must not apply here.
+    fun cached(text: String): List<Correction>? = if (allowed()) state.cached(text) else null
 
     /** The first mistake as a chip, or null when there is none or the user is in the middle of a word or not at the end of the text. */
     override fun chipLabel(): String? {
@@ -88,8 +95,10 @@ class LiveCheckController(private val badge: GemTypeBadge, private val host: Hos
 
     // ---- checking -------------------------------------------------------------------------
 
-    private fun active() = GemType.isEnabled && CheckPrefs.liveCheck(context) && host.isCheckableField() &&
-        !host.isPasswordField() && !host.isPanelShowing()
+    private fun allowed() = GemType.isEnabled && CheckPrefs.liveCheck(context) && host.isCheckableField() &&
+        !host.isPasswordField()
+
+    private fun active() = allowed() && !host.isPanelShowing()
 
     private fun schedule() {
         if (!GemType.isEnabled) return
@@ -142,6 +151,13 @@ class LiveCheckController(private val badge: GemTypeBadge, private val host: Hos
         }
     }
 
+    private val refreshBadge = Runnable {
+        val ic = host.inputConnection() ?: return@Runnable
+        if (!active()) return@Runnable
+        val field = FieldText.read(ic)
+        if (field.status == FieldText.Status.READY && field.scope == FieldText.Scope.FIELD) publish(state.refresh(field.text))
+    }
+
     private fun publish(corrections: List<Correction>) {
         badge.count = corrections.size
         onChange?.run()
@@ -151,6 +167,7 @@ class LiveCheckController(private val badge: GemTypeBadge, private val host: Hos
         job?.cancel()
         job = null
         handler.removeCallbacks(evaluate)
+        handler.removeCallbacks(refreshBadge)
         state.reset()
         publish(emptyList())
     }
@@ -158,5 +175,8 @@ class LiveCheckController(private val badge: GemTypeBadge, private val host: Hos
     private companion object {
         /** Enough text before the cursor to see whether it ends inside a word. */
         const val MID_WORD_CHARS = 8
+
+        /** The editor reports the replaced text a moment after the keyboard sends it. */
+        const val REPLACED_SETTLE_MS = 150L
     }
 }

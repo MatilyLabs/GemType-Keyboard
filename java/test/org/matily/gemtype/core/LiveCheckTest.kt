@@ -163,5 +163,12 @@ class LiveCheckTest {
         assertTrue(label.indexOf("tmk") < label.indexOf("to make"))
     }
 
+    @Test fun `long chip label shows only the new text`() {
+        val label = LiveCheck.chipLabel(fix("it friday sorry", "it on Friday, sorry."))
+        assertFalse(label.contains("it friday sorry"))
+        assertTrue(label.startsWith("→"))
+        assertTrue(label.contains("it on Friday, sorry."))
+    }
+
     private fun assertSame(expected: Any, actual: Any) = org.junit.Assert.assertSame(expected, actual)
 }

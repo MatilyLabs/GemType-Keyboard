@@ -308,7 +308,7 @@ class ConvertController(
 
     private companion object {
         const val DEBOUNCE_MS = 400L
-        const val UNDO_MS = 6_000L
+        const val UNDO_MS = 10_000L
         const val MESSAGE_MS = 4_000L
     }
 }

@@ -2515,6 +2515,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     public void replaceTextFromGemType(final boolean wholeField, final CharSequence text,
             final int beforeLength, final int afterLength) {
         mInputLogic.replaceTextFromPanel(wholeField, text, beforeLength, afterLength);
+        if (mGemTypeLive != null) {
+            mGemTypeLive.onReplaced();
+        }
     }
 
     @Override

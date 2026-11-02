@@ -496,7 +496,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         resultLabel.text = if (skipped.isEmpty()) {
             context.resources.getQuantityString(R.plurals.gemtype_fixes_count, found.size, found.size)
         } else {
-            context.getString(R.string.gemtype_fixes_partial, kept, found.size)
+            context.resources.getQuantityString(R.plurals.gemtype_fixes_partial, found.size, kept, found.size)
         }
         textView.text = DiffSpans.corrections(source, found, skipped, diffColors)
         fixRows.visibility = View.VISIBLE
