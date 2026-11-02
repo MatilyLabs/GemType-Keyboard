@@ -66,10 +66,11 @@ object GeminiProtocol {
     private fun layeredPrompt(action: Action, target: String): String {
         val shortForms = SHORT_FORMS[target]?.let { " (for example, $it)" }.orEmpty()
         val output = if (action == Action.ENGLISH) "" else
-            " Write it in $target using English (Latin) letters, the way the writer types it, not in the native script, and keep English words as they are."
+            " Write it in $target using English (Latin) letters, the way the writer types it, not in the native script, and keep English words as they are. " +
+                "Use correct punctuation with English marks: commas, question marks, and a \".\" at the end of each sentence."
         return "The text is $target typed with English (Latin) letters, quickly, with typos, short forms and English words mixed in. " +
             "Fill the two fields in order. " +
-            "\"native\": first work out what the writer means, and write it as correct, natural $target in its native script, with proper spelling and grammar. " +
+            "\"native\": first work out what the writer means, and write it as correct, natural $target in its native script, with proper spelling, grammar and punctuation (its own full stop, such as \"।\"). " +
             "Fix typos and short forms silently and read them as $target, never as English$shortForms. " +
             "Add nothing. Keep names, brands, URLs, numbers, emoji and words normally written in English. " +
             "\"rewritten\": then, based on that understanding, do this with the text: ${action.layeredTask}$output " +

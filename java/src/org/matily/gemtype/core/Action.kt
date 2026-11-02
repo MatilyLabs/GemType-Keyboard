@@ -5,6 +5,8 @@ package org.matily.gemtype.core
 /** Style rules shared by the five rewrites. */
 private const val NATURAL =
     "Write it the way a fluent native speaker would write this kind of message (chat or email): natural, conversational where the text is casual, never stiff. " +
+        "Natural is not careless: always use correct punctuation — commas, question marks, and each sentence ending with the " +
+        "language's own full stop (\"।\" in Bangla, Hindi and Nepali, \"۔\" in Urdu, \".\" in English). " +
         "Add nothing new. Keep names, URLs, numbers, emoji and line breaks, and keep English words in text that mixes languages."
 
 /**
