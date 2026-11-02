@@ -40,9 +40,11 @@ class RewriteEval {
     private class Result(val case: Case, val output: String?, val error: String?, val ms: Long) {
         val share: Double = if (output == null) 0.0 else scriptShare(output, case.script, case.keep)
         val scriptOk = output != null && share >= MIN_SCRIPT_SHARE
-        val missing = if (output == null) case.mustContain else case.mustContain.filter { !output.contains(it, ignoreCase = true) }
-        val forbidden = if (output == null) emptyList() else case.mustNotContain.filter { containsForbidden(output, it) }
-        val lostKeep = if (output == null) case.keep else case.keep.filter { !output.contains(it) }
+        // Bangla ড় য় and Hindi क़ ड़ have two encodings that look the same; compare in one (NFC).
+        private val out = output?.let(::nfc)
+        val missing = if (out == null) case.mustContain else case.mustContain.filter { !out.contains(nfc(it), ignoreCase = true) }
+        val forbidden = if (out == null) emptyList() else case.mustNotContain.filter { containsForbidden(out, nfc(it)) }
+        val lostKeep = if (out == null) case.keep else case.keep.filter { !out.contains(nfc(it)) }
         val pass get() = error == null && scriptOk && missing.isEmpty() && forbidden.isEmpty() && lostKeep.isEmpty()
     }
 
@@ -143,6 +145,8 @@ class RewriteEval {
         const val MIN_SCRIPT_SHARE = 0.85
 
         /** Share of [text]'s letters (and their combining marks) written in [script], leaving out the [keep] items. */
+        fun nfc(s: String): String = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFC)
+
         fun scriptShare(text: String, script: Character.UnicodeScript, keep: List<String>): Double {
             var rest = text
             for (k in keep) rest = rest.replace(k, " ")
