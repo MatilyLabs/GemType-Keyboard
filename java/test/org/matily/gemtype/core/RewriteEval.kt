@@ -74,7 +74,9 @@ class RewriteEval {
     @Test fun rewriteAgainstGemini() {
         val key = System.getenv("GEMTYPE_EVAL_KEY").orEmpty()
         assumeTrue("set GEMTYPE_EVAL_KEY to run the rewrite eval", key.isNotBlank())
-        val cases = loadCases()
+        // GEMTYPE_EVAL_ONLY: a regex on case ids, to rerun part of the set (e.g. "^(ur|ta)-|-(ur|ta)-1$").
+        val only = System.getenv("GEMTYPE_EVAL_ONLY")?.takeIf { it.isNotBlank() }?.toRegex()
+        val cases = loadCases()?.filter { only == null || only.containsMatchIn(it.id) }
         assumeTrue("no rewrite-cases.json found", cases != null)
         cases!!
 
@@ -150,6 +152,12 @@ class RewriteEval {
             if (r.missing.isNotEmpty()) sb.append("  missing:  ${r.missing}\n")
             if (r.forbidden.isNotEmpty()) sb.append("  forbidden present: ${r.forbidden}\n")
             if (r.lostKeep.isNotEmpty()) sb.append("  changed text that must stay: ${r.lostKeep}\n")
+        }
+        // Every answer, so a person (or Claude) can judge quality beyond the automatic checks.
+        sb.append("\nAll outputs\n")
+        for (r in results) {
+            sb.append("\n[${r.case.id}] ${if (r.pass) "pass" else "FAIL"}\n  text: ${r.case.text}\n  got:  ${r.output ?: r.error}\n")
+            if (r.readAs != null) sb.append("  read as: ${r.readAs}\n")
         }
         return sb.toString()
     }
