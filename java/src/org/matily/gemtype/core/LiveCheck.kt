@@ -14,12 +14,8 @@ object LiveCheck {
     fun wordCount(text: String): Int = Romanized.words(text).size
 
     /** True when the cursor is inside a word: the character before it is a letter, digit or combining mark (an Indic vowel sign). */
-    fun isMidWord(textBeforeCursor: CharSequence): Boolean = textBeforeCursor.lastOrNull()?.let(::isWordChar) == true
-
-    private fun isWordChar(c: Char): Boolean =
-        c.isLetterOrDigit() || Character.getType(c).let {
-            it == Character.NON_SPACING_MARK.toInt() || it == Character.COMBINING_SPACING_MARK.toInt()
-        }
+    fun isMidWord(textBeforeCursor: CharSequence): Boolean =
+        textBeforeCursor.lastOrNull()?.let(CheckProtocol::isWordChar) == true
 
     /**
      * The corrections that still apply to [text], which may have been edited since they were found: each keeps
@@ -49,8 +45,7 @@ object LiveCheck {
     private fun fits(text: String, original: String, start: Int, placed: List<Correction>): Boolean {
         val end = start + original.length
         if (original.isEmpty() || end > text.length || !text.startsWith(original, start)) return false
-        if (isWordChar(original.first()) && start > 0 && isWordChar(text[start - 1])) return false
-        if (isWordChar(original.last()) && end < text.length && isWordChar(text[end])) return false
+        if (!CheckProtocol.isWholeWord(text, original, start)) return false
         return placed.none { start < it.end && end > it.start }
     }
 

@@ -24,10 +24,13 @@ class GeminiClient(private val transport: Transport) {
      * Proofread [text]: the mistakes Gemini found, located in [text] and in text order (empty when it
      * is correct). [keyboardLanguage] is the English name of the language being typed, a hint for auto language.
      */
-    suspend fun check(text: String, config: GemtypeConfig, keyboardLanguage: String? = null): List<Correction> {
+    suspend fun check(
+        text: String, config: GemtypeConfig, keyboardLanguage: String? = null,
+        thinkingLevel: String? = Choices.checkThinkingLevel(config.model),
+    ): List<Correction> {
         requireKey(config)
         if (text.isBlank()) return emptyList()
-        return withFallbacks(Choices.checkThinkingLevel(config.model)) { level ->
+        return withFallbacks(thinkingLevel) { level ->
             val body = CheckProtocol.requestBody(text, config.language, keyboardLanguage, level).toString()
             val result = transport.post(config.model, config.apiKey, body)
             CheckProtocol.parseResponse(result.status, result.body, text)

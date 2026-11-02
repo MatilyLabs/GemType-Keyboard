@@ -16,15 +16,18 @@ import java.io.File
  *
  *     cd java && GEMTYPE_EVAL_KEY=... ./gradlew testOnlineDebugUnitTest --tests '*ProofreadEval*' -i
  *
- * Optional: GEMTYPE_EVAL_MODEL (default [Choices.DEFAULT_MODEL]), GEMTYPE_EVAL_API_BASE (a mock server),
+ * Optional: GEMTYPE_EVAL_MODEL (default [Choices.DEFAULT_MODEL]), GEMTYPE_EVAL_THINKING (MINIMAL, LOW, MEDIUM,
+ * HIGH or NONE; default the app's [Choices.checkThinkingLevel]), GEMTYPE_EVAL_GAP_MS (pause between requests,
+ * default 4000, to stay under the free tier's per-minute limit), GEMTYPE_EVAL_API_BASE (a mock server),
  * GEMTYPE_EVAL_CASES (another cases file). Prints a per-language table and the failures, and writes
  * build/proofread-eval.txt. The key is never printed or written.
  *
  * Like the keyboard's default, every case runs with writing language "auto" plus the case's keyboard
  * language as the hint; a case's `lang` is only its group in the table.
  *
- * Per case: "caught" = every mustChange text sits inside some correction's original; "kept" = no
- * correction overlaps any occurrence of a mustKeep text; "exact" = applying all corrections gives `fixed`.
+ * Per case: "caught" = every mustChange text sits inside some correction's original; "kept" = every
+ * mustKeep text is still in the corrected text (a correction may include a neighbouring word as long as
+ * it gives it back unchanged); "exact" = applying all corrections gives `fixed`.
  * A case passes when it is caught and kept; exact is reported on its own (there can be several good answers).
  */
 class ProofreadEval {
@@ -35,7 +38,7 @@ class ProofreadEval {
 
     private class Result(val case: Case, val corrections: List<Correction>, val error: String?, val ms: Long) {
         val caught = error == null && case.mustChange.all { m -> corrections.any { it.original.contains(m) } }
-        val kept = error == null && case.mustKeep.none { k -> occurrences(case.text, k).any { s -> corrections.any { s < it.end && s + k.length > it.start } } }
+        val kept = error == null && Corrections.apply(case.text, corrections).let { out -> case.mustKeep.all { out.contains(it) } }
         val exact = error == null && Corrections.apply(case.text, corrections) == case.fixed
         val pass get() = caught && kept
     }
@@ -69,27 +72,34 @@ class ProofreadEval {
         val base = System.getenv("GEMTYPE_EVAL_API_BASE")?.takeIf { it.isNotBlank() }
             ?: "https://generativelanguage.googleapis.com/v1beta/models"
         val client = GeminiClient(HttpTransport(base))
+        val thinking = System.getenv("GEMTYPE_EVAL_THINKING")?.takeIf { it.isNotBlank() }?.uppercase()
+            ?.let { if (it == "NONE") null else it } ?: Choices.checkThinkingLevel(model)
+        val gapMs = System.getenv("GEMTYPE_EVAL_GAP_MS")?.toLongOrNull() ?: 4_000L
 
-        val results = cases.map { c ->
+        val results = cases.mapIndexed { i, c ->
+            if (i > 0) runBlocking { delay(gapMs) }
             val config = GemtypeConfig(key, model, Choices.AUTO_LANGUAGE)
-            val start = System.nanoTime()
             var error: String? = null
             var corrections = emptyList<Correction>()
-            // One patient retry on a rate limit; anything else is recorded as the case's error.
-            for (attempt in 1..2) {
+            var ms = 0L
+            // Patient retries on a rate limit (not timed); anything else is recorded as the case's error.
+            for (attempt in 1..4) {
+                val start = System.nanoTime()
                 try {
-                    corrections = runBlocking { client.check(c.text, config, c.keyboard) }
+                    corrections = runBlocking { client.check(c.text, config, c.keyboard, thinking) }
                     error = null
+                    ms = (System.nanoTime() - start) / 1_000_000
                     break
                 } catch (e: GeminiException) {
                     error = "${e.kind}: ${e.message}"
+                    ms = (System.nanoTime() - start) / 1_000_000
                     if (e.kind != GeminiException.Kind.RATE_LIMITED) break
-                    runBlocking { delay(20_000) }
+                    runBlocking { delay(30_000L * attempt) }
                 }
             }
-            Result(c, corrections, error, (System.nanoTime() - start) / 1_000_000)
+            Result(c, corrections, error, ms)
         }
-        val report = report(model, results)
+        val report = report("$model, thinking ${thinking ?: "default"}", results)
         println(report)
         File("build").mkdirs()
         File("build/proofread-eval.txt").writeText(report)
@@ -123,15 +133,5 @@ class ProofreadEval {
             for (r in inexact) sb.append("  [${r.case.id}] got: ${Corrections.apply(r.case.text, r.corrections)}\n         want: ${r.case.fixed}\n")
         }
         return sb.toString()
-    }
-
-    private companion object {
-        fun occurrences(text: String, part: String): List<Int> {
-            if (part.isEmpty()) return emptyList()
-            val found = ArrayList<Int>()
-            var i = text.indexOf(part)
-            while (i != -1) { found.add(i); i = text.indexOf(part, i + 1) }
-            return found
-        }
     }
 }

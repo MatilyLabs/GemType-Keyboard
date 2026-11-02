@@ -33,13 +33,15 @@ object CheckProtocol {
     // Short per-language rules. Keys are lower case; Bengali is the picker's name for Bangla.
     private val BLOCKS = mapOf(
         "english" to "English: keep the author's US or UK spelling; fix its/it's, their/there/they're, your/you're, then/than.",
-        "bangla" to "Bangla: follow Bangla Academy standard spelling. Do not mix sadhu and cholito verb or pronoun forms in one text (guruchandali). " +
+        "bangla" to "Bangla: follow Bangla Academy standard spelling. Do not mix sadhu and cholito verb or pronoun forms in one text (guruchandali): in cholito text a sadhu pronoun or verb is an error " +
+            "(তাহারা→তারা, তাহার→তার, যাহা→যা, করিয়া→করে, গিয়াছিলাম→গিয়েছিলাম). " +
             "Fix hasanta, ya-phala and reph errors. Confusing ি/ী or ু/ূ is a spelling error. " +
-            "A sentence ends with \"।\", not \".\"; keep \"?\" and \"!\".",
+            "A sentence ends with \"।\", not \".\": report every \".\" that ends a Bangla sentence; keep \"?\" and \"!\".",
         "hindi" to "Hindi: check gender and number agreement of verbs, postpositions and adjectives. " +
-            "Fix matra errors, missing nukta, and chandrabindu vs anusvara. A sentence ends with \"।\".",
+            "Fix matra errors, missing nukta, and chandrabindu vs anusvara (मै→मैं, है/हैं with plural subjects). " +
+            "A sentence ends with \"।\", not \".\": report every \".\" that ends a Hindi sentence.",
         "urdu" to "Urdu: use Urdu punctuation (۔ ، ؟). Check gender and number agreement of verbs and adjectives.",
-        "nepali" to "Nepali: a sentence ends with \"।\". Check that verbs and adjectives agree with the subject.",
+        "nepali" to "Nepali: a sentence ends with \"।\", not \".\". Check that verbs and adjectives agree with the subject.",
     )
     private val SPECIFIC = listOf("english", "bangla", "hindi", "urdu", "nepali")
 
@@ -79,7 +81,7 @@ object CheckProtocol {
             "Error categories to report:",
             "- grammar: subject-verb agreement, wrong verb tense or form, pronoun case, wrong or missing articles/prepositions, word order, and RUN-ON SENTENCES or comma splices — two sentences joined without punctuation is always an error (fix by adding the missing period or comma, e.g. \"inviting me I think\" -> \"inviting me. I think\").",
             "- spelling: misspelled words and wrong homophones (their/there, you're/your, its/it's).",
-            "- punctuation: missing, extra, or misplaced punctuation; wrong spacing around punctuation (e.g. a space before a period like \"this .\" -> \"this.\"); missing capitalization at sentence starts.",
+            "- punctuation: missing, extra, or misplaced punctuation; wrong spacing around punctuation (e.g. a space before a period like \"this .\" -> \"this.\"); missing capitalization at the start of EVERY sentence (check each sentence, not only the first).",
             "- style: phrasing that is clearly awkward, confusing, or unidiomatic — something a fluent writer would not write (e.g. \"a good idea how to implement this\" -> \"a good idea; how should we implement this?\"). Suggest a natural rewording.",
             "Phone typing: text is typed fast on a phone, so expect and fix lowercase \"i\" as a pronoun, missing apostrophes (dont, im, cant, wont, its/it's), doubled words, a missing capital at the start of a sentence, double spaces, and a missing space after punctuation.",
             "Do NOT flag: personal names, slang or informal tone that is written correctly, or pure taste preferences.",
@@ -135,20 +137,37 @@ object CheckProtocol {
     fun locate(text: String, corrections: List<Correction>): List<Correction> {
         val located = ArrayList<Correction>()
         for (c in corrections) {
-            var from = 0
-            var start = -1
-            while (true) {
-                val idx = text.indexOf(c.original, from)
-                if (idx == -1) break
-                val end = idx + c.original.length
-                if (located.none { idx < it.end && end > it.start }) {
-                    start = idx
-                    break
-                }
-                from = idx + 1
-            }
+            // A whole-word match first: a short original such as "i" must not land inside "invite".
+            val start = find(text, c.original, located, wholeWord = true).takeIf { it >= 0 }
+                ?: find(text, c.original, located, wholeWord = false)
             if (start != -1) located.add(c.copy(start = start, end = start + c.original.length))
         }
         return located.sortedBy { it.start }
     }
+
+    private fun find(text: String, original: String, placed: List<Correction>, wholeWord: Boolean): Int {
+        var from = 0
+        while (true) {
+            val idx = text.indexOf(original, from)
+            if (idx == -1) return -1
+            val end = idx + original.length
+            if (placed.none { idx < it.end && end > it.start } && (!wholeWord || isWholeWord(text, original, idx))) return idx
+            from = idx + 1
+        }
+    }
+
+    /** [original] at [start] is not cut out of a longer word on either side. */
+    internal fun isWholeWord(text: String, original: String, start: Int): Boolean {
+        val end = start + original.length
+        if (original.isEmpty()) return false
+        if (isWordChar(original.first()) && start > 0 && isWordChar(text[start - 1])) return false
+        if (isWordChar(original.last()) && end < text.length && isWordChar(text[end])) return false
+        return true
+    }
+
+    /** A letter, digit or combining mark (an Indic vowel sign). */
+    internal fun isWordChar(c: Char): Boolean =
+        c.isLetterOrDigit() || Character.getType(c).let {
+            it == Character.NON_SPACING_MARK.toInt() || it == Character.COMBINING_SPACING_MARK.toInt()
+        }
 }

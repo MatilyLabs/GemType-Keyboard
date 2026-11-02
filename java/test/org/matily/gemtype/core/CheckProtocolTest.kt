@@ -240,6 +240,21 @@ class CheckProtocolTest {
         assertEquals(listOf(0, 3), two.map { it.start })
     }
 
+    @Test fun aShortOriginalLandsOnTheWholeWordNotInsideAnother() {
+        // The eval caught "i" -> "I" turning "invite" into "Invite".
+        val text = "Thanks for the invite, i will try my best to come."
+        val found = parse(text, item("i", "I"))
+        assertEquals(1, found.size)
+        assertEquals(text.indexOf(", i ") + 2, found[0].start)
+        assertEquals("Thanks for the invite, I will try my best to come.", Corrections.apply(text, found))
+    }
+
+    @Test fun aFragmentWithNoWholeWordMatchIsStillLocated() {
+        val found = parse("I recieved it.", item("recieved", "received"))
+        assertEquals(1, found.size)
+        assertEquals(2, found[0].start)
+    }
+
     @Test fun locatesBanglaAndEmojiByUtf16Position() {
         val text = "আমি 😀 কাল আসবো না."
         val found = parse(text, item("না.", "না।", "Sentence ends with ।", "punctuation"))
