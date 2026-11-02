@@ -90,6 +90,14 @@
                     android:textSize="16sp"
                     android:lineSpacingMultiplier="1.15"
                     android:textIsSelectable="false" />
+                <!-- Fix: one row per correction (filled in by GemTypePanelController). -->
+                <LinearLayout
+                    android:id="@+id/gemtype_panel_fixes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
                 <ProgressBar
                     android:id="@+id/gemtype_panel_progress"
                     style="?android:attr/progressBarStyleHorizontal"

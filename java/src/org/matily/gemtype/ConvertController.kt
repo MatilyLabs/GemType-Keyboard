@@ -15,6 +15,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.matily.gemtype.core.Action
+import org.matily.gemtype.core.Correction
+import org.matily.gemtype.core.Corrections
 import org.matily.gemtype.core.GeminiException
 import org.matily.gemtype.core.Romanized
 
@@ -25,8 +27,15 @@ import org.matily.gemtype.core.Romanized
  *
  * Detection is offline and cheap (cached lists, no I/O); it runs [DEBOUNCE_MS] after typing or cursor
  * moves pause. Owns a scope that is cancelled when input finishes, so no request outlives its field.
+ *
+ * The bar also carries the "top fix" chip from "check as you type" ([FixSource]) when no conversion
+ * pill is showing; tapping it applies that one correction, with the same Undo pill.
  */
-class ConvertController(private val bar: ConvertPillBar, private val host: Host) {
+class ConvertController(
+    private val bar: ConvertPillBar,
+    private val host: Host,
+    private val fixes: FixSource? = null,
+) {
 
     /** What the pills need from the keyboard service, on top of what the panel needs. */
     interface Host : GemTypePanelController.Host {
@@ -46,6 +55,18 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         fun select(start: Int, end: Int)
     }
 
+    /** Where the chip's correction comes from. */
+    interface FixSource {
+        /** The chip's text ("dont → don't"), or null when no chip should show now. */
+        fun chipLabel(): String?
+
+        /** The user is in the middle of a word, so a chip would only be in the way. */
+        fun midWord(): Boolean
+
+        /** The first correction as it applies to [text] (what the field holds now), or null if it no longer does. */
+        fun topFix(text: String): Correction?
+    }
+
     /** [field] was replaced by [result], leaving the cursor at [cursor]. */
     private class Undo(val field: FieldText, val result: String, val cursor: Int)
 
@@ -57,6 +78,7 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
     private var busy = -1
     private var undo: Undo? = null
     private var message: String? = null
+    private var chip: String? = null
     private val evaluate = Runnable { evaluate() }
     private val undoExpired = Runnable { clearUndo() }
     private val messageExpired = Runnable { clearMessage() }
@@ -84,6 +106,13 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         }
         // The user is typing again: a leftover error would only be in the way.
         if (message != null) clearMessage() else if (busy < 0) schedule()
+        // Typing into a word: the chip goes right away, it comes back at the next pause.
+        if (chip != null && fixes?.midWord() == true) render()
+    }
+
+    /** What the chip would say may have changed. */
+    fun refreshChip() {
+        if (undo == null && message == null && busy < 0) render()
     }
 
     fun onSubtypeChanged() = schedule()
@@ -130,11 +159,14 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
 
     private fun render() {
         message?.let { return bar.showMessage(it) }
+        // A conversion pill is the better offer; the chip only fills an otherwise empty bar.
+        chip = if (undo == null && busy < 0 && matches.isEmpty() && GemType.isEnabled) fixes?.chipLabel() else null
         val labels = when {
             undo != null -> listOf(context.getString(R.string.gemtype_pill_undo))
-            else -> matches.map { context.getString(R.string.gemtype_pill_label, Romanized.nativeName(it.language)) }
+            else -> matches.map { context.getString(R.string.gemtype_pill_label, Romanized.nativeName(it.language)) } +
+                listOfNotNull(chip)
         }
-        bar.show(labels, busy)
+        bar.show(labels, busy, if (chip != null) labels.lastIndex else -1)
     }
 
     private fun reset() {
@@ -144,6 +176,7 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
         busy = -1
         undo = null
         message = null
+        chip = null
         matches = emptyList()
         render()
     }
@@ -156,8 +189,26 @@ class ConvertController(private val bar: ConvertPillBar, private val host: Host)
             busy >= 0 -> {}
             message != null -> clearMessage()
             undo != null -> undoConversion(undo)
-            else -> matches.getOrNull(index)?.let { convert(index, it.language) }
+            else -> {
+                val match = matches.getOrNull(index)
+                if (match != null) convert(index, match.language) else if (chip != null) applyTopFix()
+            }
         }
+    }
+
+    /** The chip was tapped: apply that one correction in place. */
+    private fun applyTopFix() {
+        val ic = host.inputConnection() ?: return
+        val field = FieldText.read(ic)
+        val fix = if (field.status == FieldText.Status.READY && field.scope == FieldText.Scope.FIELD) {
+            fixes?.topFix(field.text)
+        } else null
+        val result = fix?.let { Corrections.apply(field.text, listOf(it)) }
+        if (result == null || result == field.text || !field.replace(host, result)) {
+            return showMessage(context.getString(R.string.gemtype_pill_text_changed))
+        }
+        host.clearSuggestions()
+        offerUndo(field, result)
     }
 
     private fun convert(index: Int, language: String) {

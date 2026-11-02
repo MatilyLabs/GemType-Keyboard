@@ -60,6 +60,7 @@ import org.smc.inputmethod.indic.clipboard.ClipboardHistoryEntry;
 import org.smc.inputmethod.indic.clipboard.ClipboardHistoryManager;
 import org.matily.gemtype.ConvertPillBar;
 import org.matily.gemtype.GemType;
+import org.matily.gemtype.GemTypeBadge;
 import org.smc.inputmethod.indic.settings.Settings;
 import org.smc.inputmethod.indic.settings.SettingsValues;
 import org.smc.inputmethod.indic.suggestions.MoreSuggestionsView.MoreSuggestionsListener;
@@ -110,6 +111,8 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
     // GemType's "convert to your language" pills, right after the menu key; the suggestions make
     // room for them (see {@link #updateConvertPillsInset}).
     private final ConvertPillBar mConvertPills;
+    // The red count on GemType's key: mistakes "check as you type" found.
+    private final GemTypeBadge mGemTypeBadge;
     private int mLeftInset;
     private final View mToolboxStrip;
     private final View mToolboxRow;
@@ -283,6 +286,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         mConvertPills = findViewById(R.id.suggestions_strip_gemtype_pills);
         mLeftInset = getResources().getDimensionPixelSize(
                 R.dimen.config_suggestions_strip_edge_key_width);
+        // Top-right corner of the key (the badge is 16dp wide, a little more with two characters).
+        mGemTypeBadge = findViewById(R.id.suggestions_strip_gemtype_badge);
+        setStartMargin(mGemTypeBadge, mLeftInset
+                - (int) (20 * getResources().getDisplayMetrics().density));
         mConvertPills.setOnWidthChanged(this::updateConvertPillsInset);
         mClipboardChipLeadingSpacer = findViewById(R.id.clipboard_chip_leading_spacer);
         mToolboxSettingsKey = findViewById(R.id.toolbox_settings_key);
@@ -353,6 +360,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
 
     public ConvertPillBar getConvertPills() {
         return mConvertPills;
+    }
+
+    public GemTypeBadge getGemTypeBadge() {
+        return mGemTypeBadge;
     }
 
     /**
@@ -1119,6 +1130,7 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         setStartMargin(mToolboxStrip, leftInset);
         setStartMargin(mMenuKey, visible ? slot : 0);
         mConvertPills.setSuppressed(!visible);
+        mGemTypeBadge.setSuppressed(!visible);
         updateConvertPillsInset();
     }
 

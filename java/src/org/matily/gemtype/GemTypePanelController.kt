@@ -30,6 +30,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.matily.gemtype.core.Action
+import org.matily.gemtype.core.Correction
+import org.matily.gemtype.core.Corrections
 import org.matily.gemtype.core.GeminiException
 import org.matily.gemtype.core.Romanized
 
@@ -63,6 +65,12 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         /** Whether a lower-case word is valid English, or null when there is no English dictionary to ask. */
         fun englishCheck(): ((String) -> Boolean)? = null
 
+        /** The language being typed on the keyboard (its English name), a hint for Fix when the writing language is auto. */
+        fun keyboardLanguage(): String? = null
+
+        /** The mistakes "check as you type" already found in exactly [text], if it has; Fix then needs no request. */
+        fun cachedCheck(text: String): List<Correction>? = null
+
         /** Replace [field] with [result] went through and the panel is closed: offer Undo. */
         fun onReplaced(field: FieldText, result: CharSequence) {}
     }
@@ -84,6 +92,10 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private var source = ""
     private var mode = Pick(Action.FIX)
     private val results = HashMap<Pick, String>()
+
+    // Fix is a list of corrections, not a rewrite: what Gemini found, and which of them the user skipped.
+    private var fixes: List<Correction>? = null
+    private val skipped = HashSet<Int>()
     private var error: String? = null
     private var loading = false
 
@@ -98,6 +110,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     private val scroll: ScrollView = panel.findViewById(R.id.gemtype_panel_scroll)
     private val resultLabel: TextView = panel.findViewById(R.id.gemtype_panel_result_label)
     private val textView: TextView = panel.findViewById(R.id.gemtype_panel_text)
+    private val fixRows: LinearLayout = panel.findViewById(R.id.gemtype_panel_fixes)
     private val progress: ProgressBar = panel.findViewById(R.id.gemtype_panel_progress)
     private val linkButton: TextView = panel.findViewById(R.id.gemtype_panel_link_button)
     private val chipsScroll: HorizontalScrollView = panel.findViewById(R.id.gemtype_panel_chips_scroll)
@@ -141,7 +154,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         replaceButton.background = ripple(roundRect(primary, 12f))
         shareButton.setTextColor(onPrimary)
         shareButton.background = ripple(roundRect(primary, 12f))
-        shareButton.setOnClickListener { results[mode]?.let { host.share(it) } }
+        shareButton.setOnClickListener { currentResult()?.let { host.share(it) } }
         keyboardKey.setOnClickListener { host.closePanel() }
         linkButton.setOnClickListener { onLinkButton() }
         copyButton.setOnClickListener { copy() }
@@ -217,6 +230,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
     private fun reset() {
         results.clear()
+        fixes = null
+        skipped.clear()
         error = null
         loading = false
         mode = Pick(Action.FIX)
@@ -239,7 +254,17 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
                     // Text typed in English letters that looks like one of the user's languages: convert it first, not Fix.
                     val native = detectLanguages()
                     setChips(native)
-                    fetch(native.firstOrNull()?.let { Pick(Action.NATIVE, it.language) } ?: Pick(Action.FIX))
+                    val first = native.firstOrNull()?.let { Pick(Action.NATIVE, it.language) } ?: Pick(Action.FIX)
+                    // "Check as you type" may have checked exactly this text already: no second request.
+                    val cached = if (first.action == Action.FIX && !external) host.cachedCheck(source) else null
+                    if (cached != null) {
+                        mode = first
+                        fixes = cached
+                        loading = false
+                        render()
+                    } else {
+                        fetch(first)
+                    }
                 } else {
                     loading = false
                     status = Status.NO_KEY
@@ -291,8 +316,24 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         return Romanized.order(found, ConvertPrefs.lastLanguage(context))
     }
 
+    /** What Replace, Copy and Share use: the rewrite, or for Fix the text with the corrections not skipped applied. */
+    private fun currentResult(): String? {
+        val found = fixes
+        return if (mode.action == Action.FIX && found != null) {
+            Corrections.apply(source, found.filterIndexed { i, _ -> i !in skipped })
+        } else results[mode]
+    }
+
+    private fun hasResult(pick: Pick) = if (pick.action == Action.FIX) fixes != null else results.containsKey(pick)
+
+    /** The ✕ / ↺ on a Fix row: skip that correction, or put it back. */
+    private fun toggleFix(index: Int) {
+        if (!skipped.remove(index)) skipped.add(index)
+        render(keepScroll = true)
+    }
+
     private fun replace() {
-        val result = results[mode] ?: return
+        val result = currentResult() ?: return
         if (external) {
             host.replaceSelection(result)
             return
@@ -309,7 +350,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
     }
 
     private fun copy() {
-        val result = results[mode] ?: return
+        val result = currentResult() ?: return
         context.getSystemService(ClipboardManager::class.java)
             ?.setPrimaryClip(ClipData.newPlainText("GemType", result))
         copyButton.setText(R.string.gemtype_copied)
@@ -322,7 +363,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         // Tapping the chip that is already running would only restart the same request.
         if (status != Status.READY || (loading && pick == mode)) return
         mode = pick
-        if (results.containsKey(pick)) {
+        if (hasResult(pick)) {
             job?.cancel()
             loading = false
             error = null
@@ -347,7 +388,12 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         try {
             val config = withContext(Dispatchers.IO) { GemTypeSettings.load(context) }
             val target = pick.language?.let { Romanized.englishName(it) }
-            results[pick] = GemType.client.refine(text, pick.action, config, target)
+            if (pick.action == Action.FIX) {
+                fixes = GemType.client.check(text, config, host.keyboardLanguage())
+                skipped.clear()
+            } else {
+                results[pick] = GemType.client.refine(text, pick.action, config, target)
+            }
             // Remember which language was wanted: it is offered first next time.
             pick.language?.let { ConvertPrefs.setLastLanguage(context, it) }
         } catch (e: GeminiException) {
@@ -371,7 +417,7 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
 
     // ---- rendering -----------------------------------------------------------------------
 
-    private fun render() {
+    private fun render(keepScroll: Boolean = false) {
         val ready = status == Status.READY
         scopeLabel.text = when {
             !ready || external -> ""
@@ -385,6 +431,8 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
         keyboardKey.visibility = if (external) View.GONE else View.VISIBLE
         progress.visibility = if (ready && loading) View.VISIBLE else View.GONE
         linkButton.visibility = View.GONE
+        fixRows.removeAllViews()
+        fixRows.visibility = View.GONE
         textView.setTextColor(onSurface)
         resultLabel.text = if (ready) mode.action.resultLabel else ""
         resultLabel.visibility = if (ready) View.VISIBLE else View.GONE
@@ -407,10 +455,15 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             return
         }
 
-        val result = results[mode]
+        val found = fixes.takeIf { mode.action == Action.FIX }
+        val result = currentResult()
         when {
-            result != null -> textView.text =
-                if (mode.action == Action.FIX) DiffSpans.build(source, result, diffColors) else result
+            found != null && found.isEmpty() -> {
+                resultLabel.setText(R.string.gemtype_no_mistakes)
+                textView.setText(R.string.gemtype_looks_good)
+            }
+            found != null -> showFixes(found)
+            result != null -> textView.text = result
             error != null -> {
                 textView.text = error
                 textView.setTextColor(errorColor)
@@ -423,7 +476,9 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             }
         }
         val canApply = result != null
-        for ((button, enabled) in listOf(copyButton to canApply, replaceButton to canApply, shareButton to canApply)) {
+        // Nothing to put back when there are no corrections, or every one was skipped.
+        val canPut = canApply && (found == null || result != source)
+        for ((button, enabled) in listOf(copyButton to canApply, replaceButton to canPut, shareButton to canApply)) {
             button.isEnabled = enabled
             button.alpha = if (enabled) 1f else 0.4f
         }
@@ -432,8 +487,72 @@ class GemTypePanelController(private val panel: GemTypePanelView, private val ho
             chip.setTextColor(if (selected) onPrimary else onSurface)
             chip.background = ripple(roundRect(if (selected) primary else functionalColor, 18f))
         }
-        scroll.scrollTo(0, 0)
+        if (!keepScroll) scroll.scrollTo(0, 0)
     }
+
+    /** Fix result: the header, the text with the corrections marked in it, and a row per correction. */
+    private fun showFixes(found: List<Correction>) {
+        val kept = found.size - skipped.size
+        resultLabel.text = if (skipped.isEmpty()) {
+            context.resources.getQuantityString(R.plurals.gemtype_fixes_count, found.size, found.size)
+        } else {
+            context.getString(R.string.gemtype_fixes_partial, kept, found.size)
+        }
+        textView.text = DiffSpans.corrections(source, found, skipped, diffColors)
+        fixRows.visibility = View.VISIBLE
+        found.forEachIndexed { index, c -> fixRows.addView(fixRow(index, c, index in skipped)) }
+    }
+
+    /** `old → new`, then the type and the reason in smaller text, and the ✕ / ↺ toggle. */
+    private fun fixRow(index: Int, c: Correction, skipped: Boolean): View {
+        val diff = TextView(context).apply {
+            text = DiffSpans.pair(c.original, c.replacement, if (skipped) null else diffColors)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+            setTextColor(onSurface)
+        }
+        val why = TextView(context).apply {
+            text = listOf(typeLabel(c.type), c.explanation).filter { it.isNotBlank() }.joinToString(" · ")
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTextColor(onSurfaceVariant)
+        }
+        val toggle = TextView(context).apply {
+            text = if (skipped) "↺" else "✕"
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            setTextColor(onSurfaceVariant)
+            gravity = Gravity.CENTER
+            minWidth = dp(40)
+            minHeight = dp(40)
+            background = ripple(roundRect(Color.TRANSPARENT, 20f))
+            contentDescription = context.getString(if (skipped) R.string.gemtype_fix_restore else R.string.gemtype_fix_skip)
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { toggleFix(index) }
+        }
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            alpha = if (skipped) 0.6f else 1f
+            addView(
+                LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addView(diff)
+                    addView(why)
+                },
+                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
+            )
+            addView(toggle, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            setPadding(0, dp(2), 0, dp(2))
+        }
+    }
+
+    private fun typeLabel(type: Correction.Type) = context.getString(
+        when (type) {
+            Correction.Type.GRAMMAR -> R.string.gemtype_type_grammar
+            Correction.Type.SPELLING -> R.string.gemtype_type_spelling
+            Correction.Type.PUNCTUATION -> R.string.gemtype_type_punctuation
+            Correction.Type.STYLE -> R.string.gemtype_type_style
+        },
+    )
 
     // ---- helpers -------------------------------------------------------------------------
 

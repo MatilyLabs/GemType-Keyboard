@@ -19,6 +19,19 @@
     <string name="gemtype_too_long_shared">That text is too long for GemType (limit: %1$d characters).</string>
     <string name="gemtype_no_key">Add your Gemini API key to use GemType</string>
     <string name="gemtype_add_key">Add API key</string>
+    <string name="gemtype_looks_good">Looks good — no mistakes found.</string>
+    <string name="gemtype_no_mistakes">No mistakes found ✓</string>
+    <plurals name="gemtype_fixes_count">
+        <item quantity="one">%1$d fix</item>
+        <item quantity="other">%1$d fixes</item>
+    </plurals>
+    <string name="gemtype_fixes_partial">%1$d of %2$d fixes</string>
+    <string name="gemtype_fix_skip">Skip this fix</string>
+    <string name="gemtype_fix_restore">Restore this fix</string>
+    <string name="gemtype_type_grammar">Grammar</string>
+    <string name="gemtype_type_spelling">Spelling</string>
+    <string name="gemtype_type_punctuation">Punctuation</string>
+    <string name="gemtype_type_style">Style</string>
     <string name="gemtype_text_changed">The text changed while GemType was open. Close and reopen GemType.</string>
 
     <!-- Selection menu, share sheet, Quick Settings tile -->
@@ -65,6 +78,8 @@
     <string name="gemtype_language">Writing language</string>
     <string name="gemtype_language_auto">Auto-detect (keep the text\'s language)</string>
     <string name="gemtype_section_keyboard">On the keyboard</string>
+    <string name="gemtype_live_check">Check as you type</string>
+    <string name="gemtype_live_check_summary">Check your text for mistakes after you pause and show how many were found on the GemType key. Sends your text to Gemini while you type.</string>
     <string name="gemtype_show_convert_pill">Show conversion pill</string>
     <string name="gemtype_show_convert_pill_summary">Offer to turn text typed in English letters into your language</string>
 

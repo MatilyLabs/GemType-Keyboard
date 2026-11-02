@@ -4,12 +4,13 @@ package org.matily.gemtype
 
 import android.view.inputmethod.InputConnection
 import com.android.inputmethod.latin.RichInputMethodManager
+import org.matily.gemtype.core.Correction
 import org.matily.gemtype.core.Romanized
 import org.smc.inputmethod.indic.LatinIME
 import org.smc.inputmethod.indic.settings.Settings
 
-/** Connects the GemType panel and the conversion pills to the keyboard service. */
-class LatinImeGemTypeHost(private val ime: LatinIME) : ConvertController.Host {
+/** Connects the GemType panel, the conversion pills and "check as you type" to the keyboard service. */
+class LatinImeGemTypeHost(private val ime: LatinIME) : LiveCheckController.Host {
     override fun inputConnection(): InputConnection? = ime.currentInputConnection
 
     override fun isPasswordField(): Boolean =
@@ -38,6 +39,18 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : ConvertController.Host {
         return subtype.locale.language !in Romanized.NON_LATIN &&
             subtype.getExtraValueOf("TransliterationMethod").isNullOrEmpty()
     }
+
+    override fun isCheckableField(): Boolean =
+        Settings.getInstance().getCurrent()?.mInputAttributes?.mIsGeneralTextInput ?: false
+
+    override fun isPanelShowing(): Boolean = ime.isShowingGemTypePanel
+
+    // The language being typed, as the prompt's hint ("Bangla"); none when the subtype has no language.
+    override fun keyboardLanguage(): String? =
+        RichInputMethodManager.getInstance().currentSubtype.locale.language.takeIf { it.isNotEmpty() }
+            ?.let(Romanized::englishName)
+
+    override fun cachedCheck(text: String): List<Correction>? = ime.getGemTypeCachedCheck(text)
 
     override fun clearSuggestions() = ime.setNeutralSuggestionStrip()
 

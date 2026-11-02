@@ -270,4 +270,13 @@
         android:visibility="gone"
         android:contentDescription="@string/gemtype_strip_button_description"
         style="?attr/suggestionWordStyle" />
+    <!-- GemType: mistake count on the key's top-right corner (not clickable: taps reach the key).
+         SuggestionStripView sets the start margin from the key's width. -->
+    <org.matily.gemtype.GemTypeBadge
+        android:id="@+id/suggestions_strip_gemtype_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="3dp"
+        android:visibility="gone" />
 </merge>

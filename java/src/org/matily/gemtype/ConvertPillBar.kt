@@ -42,6 +42,7 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
 
     private var labels: List<String> = emptyList()
     private var busy = -1
+    private var chip = -1
 
     private val fill = GemTypeUi.themeColor(context, R.attr.md3Primary, ACCENT, R.attr.colorPrimary)
     private val text = GemTypeUi.themeColor(context, R.attr.md3OnPrimary, Color.WHITE, R.attr.colorOnPrimary)
@@ -57,10 +58,14 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
         visibility = GONE
     }
 
-    /** Show one pill per label; the pill at [busy] (if any) shows a spinner and the others are hidden. */
-    fun show(labels: List<String>, busy: Int = -1) {
+    /**
+     * Show one pill per label; the pill at [busy] (if any) shows a spinner and the others are hidden. The
+     * pill at [chip] is the quieter outlined one: a suggested fix, not an action on all the text.
+     */
+    fun show(labels: List<String>, busy: Int = -1, chip: Int = -1) {
         this.labels = labels
         this.busy = busy
+        this.chip = chip
         removeAllViews()
         labels.forEachIndexed { index, label ->
             if (busy >= 0 && index != busy) return@forEachIndexed
@@ -86,8 +91,13 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
         orientation = HORIZONTAL
         gravity = Gravity.CENTER
         setPadding(GemTypeUi.dp(context, 12), 0, GemTypeUi.dp(context, 12), 0)
-        background = if (index == MESSAGE) GemTypeUi.roundRect(context, errorFill, 18f)
-            else GemTypeUi.roundRect(context, fill, 15f)
+        background = when {
+            index == MESSAGE -> GemTypeUi.roundRect(context, errorFill, 18f)
+            index == chip -> GemTypeUi.roundRect(
+                context, ColorUtils.setAlphaComponent(fill, 0x24), 15f, ColorUtils.setAlphaComponent(fill, 0x99),
+            )
+            else -> GemTypeUi.roundRect(context, fill, 15f)
+        }
         contentDescription = label
         isClickable = true
         isFocusable = true
@@ -101,10 +111,12 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
         }
         val isMessage = index == MESSAGE
         addView(TextView(context).apply {
-            this.text = if (isMessage) label else LRM + label // keeps the arrow first, even before an Urdu or Arabic name
-            setTextColor(if (isMessage) errorText else this@ConvertPillBar.text)
+            val isChip = index == chip
+            // The arrow stays first, even before an Urdu or Arabic name (a chip's text isolates its own sides).
+            this.text = if (isMessage || isChip) label else LRM + label
+            setTextColor(if (isMessage) errorText else if (isChip) fill else this@ConvertPillBar.text)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, if (isMessage) 12f else 14f)
-            maxWidth = GemTypeUi.dp(context, if (isMessage) 190 else 130)
+            maxWidth = GemTypeUi.dp(context, if (isMessage) 190 else if (isChip) 150 else 130)
             maxLines = if (isMessage) 2 else 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         })
