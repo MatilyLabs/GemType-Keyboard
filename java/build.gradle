@@ -132,6 +132,8 @@ android {
         test {
             java.srcDirs = ['test']
             kotlin.srcDirs = ['test']
+            // Cases for the opt-in proofreader eval (ProofreadEval).
+            resources.srcDirs = ['test/resources']
         }
         androidTest.setRoot('tests')
     }

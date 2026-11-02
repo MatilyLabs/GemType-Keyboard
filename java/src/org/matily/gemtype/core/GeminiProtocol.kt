@@ -41,8 +41,11 @@ object GeminiProtocol {
     private fun errorMessage(raw: String, fallback: String): String =
         runCatching { JSONObject(raw).getJSONObject("error").getString("message") }.getOrNull() ?: fallback
 
-    /** Map an HTTP status and body to the `rewritten` text, or throw the matching [GeminiException]. */
-    fun parseResponse(status: Int, raw: String): String {
+    /**
+     * Map an HTTP status and body to the answer's text (the JSON string the model wrote), or throw
+     * the matching [GeminiException]. Shared by every request kind.
+     */
+    fun answerText(status: Int, raw: String): String {
         when {
             status == 429 -> throw GeminiException(GeminiException.Kind.RATE_LIMITED)
             // Google answers 400 FAILED_PRECONDITION from regions the API isn't offered in (VPNs get this a lot).
@@ -56,12 +59,17 @@ object GeminiProtocol {
             status !in 200..299 -> throw GeminiException(GeminiException.Kind.HTTP, "HTTP $status")
         }
         // First non-thought text part (thoughts are off, but be tolerant).
-        val text = runCatching {
+        return runCatching {
             val parts = JSONObject(raw).getJSONArray("candidates").getJSONObject(0)
                 .getJSONObject("content").getJSONArray("parts")
             (0 until parts.length()).map { parts.getJSONObject(it) }
                 .first { it.has("text") && !it.optBoolean("thought") }.getString("text")
         }.getOrNull() ?: throw GeminiException(GeminiException.Kind.EMPTY_RESPONSE)
+    }
+
+    /** Map an HTTP status and body to the `rewritten` text, or throw the matching [GeminiException]. */
+    fun parseResponse(status: Int, raw: String): String {
+        val text = answerText(status, raw)
         val rewritten = runCatching { JSONObject(text).optString("rewritten") }.getOrNull()
         if (rewritten.isNullOrBlank()) throw GeminiException(GeminiException.Kind.EMPTY_RESPONSE)
         return rewritten

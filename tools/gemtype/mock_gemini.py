@@ -8,7 +8,9 @@ without a real API key. Debug builds only:
 
 Each request body is printed so you can check what the app sends (the key
 itself is never printed). Replies use the same structured-JSON shape the app
-asks Gemini for: {"rewritten": "..."}. Failure cases for the Test key button:
+asks Gemini for: {"rewritten": "..."}, or {"corrections": [...]} for the proofreader
+(request schema has "corrections"): fixed demo corrections for "i dont think we can make it friday sorry",
+a few common typos otherwise, an empty list for text with none. Failure cases for the Test key button:
 "native script" prompts -> a fixed sentence in the language named in the prompt, "Translate" -> English;
 key "bad-key" -> 400 invalid key; any model id not starting "gemini-3" -> 404.
 Failure modes keyed by the API key (a key that merely contains the word, e.g. AIzaMOCKRATE000000000000000000000000000):
@@ -17,6 +19,7 @@ MOCK_DELAY=2 python3 tools/gemtype/mock_gemini.py answers after 2 s (to see spin
 """
 import json
 import os
+import re
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -40,6 +43,33 @@ NATIVE = {
 
 # A few typos to repair so the Fix diff has something to show.
 TYPOS = {"Ths": "This", "tst": "test", "teh": "the", "recieve": "receive"}
+
+
+# Proofreader answers. Each: (regex over the text, replacement, explanation, type). Only the first
+# match of each rule is reported, and "original" is copied from the text, as the real model does.
+CHECKS = [
+    (r"\bit friday sorry\b", "it on Friday, sorry.", "Missing 'on' and punctuation.", "punctuation"),
+    (r"^i\b", "I", "The pronoun 'I' is always capital.", "grammar"),
+    (r"\bdont\b", "don't", "Missing apostrophe.", "spelling"),
+    (r"\bim\b", "I'm", "Missing apostrophe.", "spelling"),
+    (r"\bcant\b", "can't", "Missing apostrophe.", "spelling"),
+    (r"\bwont\b", "won't", "Missing apostrophe.", "spelling"),
+    (r"\b(Ths|ths)\b", "This", "Misspelled word.", "spelling"),
+    (r"\btst\b", "test", "Misspelled word.", "spelling"),
+    (r"\bteh\b", "the", "Misspelled word.", "spelling"),
+    (r"\brecieve\b", "receive", "'i' before 'e' except after 'c'.", "spelling"),
+]
+
+
+def corrections_for(text):
+    """Deterministic stand-in for the proofreader; corrections never overlap."""
+    found, used = [], []
+    for pattern, replacement, why, kind in CHECKS:
+        m = re.search(pattern, text)
+        if m and not any(m.start() < e and m.end() > s for s, e in used):
+            used.append((m.start(), m.end()))
+            found.append((m.start(), {"original": m.group(0), "replacement": replacement, "explanation": why, "type": kind}))
+    return [c for _, c in sorted(found, key=lambda x: x[0])]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -66,6 +96,11 @@ class Handler(BaseHTTPRequestHandler):
         if not model.startswith("gemini-3"):
             return self.reply(404, {"error": {"message": f"models/{model} is not found for API version v1beta."}})
         system = body["systemInstruction"]["parts"][0]["text"]
+        schema = body.get("generationConfig", {}).get("responseSchema", {})
+        if "corrections" in schema.get("properties", {}):
+            text = body["contents"][0]["parts"][0]["text"].removeprefix("TEXT TO CHECK:\n")
+            answer = {"corrections": corrections_for(text)}
+            return self.reply(200, {"candidates": [{"content": {"parts": [{"text": json.dumps(answer)}]}}]})
         text = body["contents"][0]["parts"][0]["text"].removeprefix("TEXT:\n")
         out = next((v for k, v in DEMO.items() if system.startswith(k)), text)
         if "native script" in system:

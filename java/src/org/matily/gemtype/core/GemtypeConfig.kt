@@ -36,6 +36,9 @@ object Choices {
         model.contains("flash-lite") -> "MINIMAL"
         else -> "LOW"
     }
+
+    /** The proofreader needs a little reasoning to judge sentences: LOW on every Gemini 3 model (Flash-Lite included). */
+    fun checkThinkingLevel(model: String): String? = if (model.startsWith("gemini-3")) "LOW" else null
 }
 
 /** What a Gemini API key from Google AI Studio looks like. */
