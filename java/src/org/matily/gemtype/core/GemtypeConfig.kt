@@ -37,8 +37,12 @@ object Choices {
         else -> "LOW"
     }
 
-    /** The proofreader needs a little reasoning to judge sentences: LOW on every Gemini 3 model (Flash-Lite included). */
-    fun checkThinkingLevel(model: String): String? = if (model.startsWith("gemini-3")) "LOW" else null
+    /**
+     * The proofreader needs reasoning to judge sentences: MEDIUM on every Gemini 3 model (Flash-Lite included).
+     * On the 59-case eval MEDIUM caught 58 and changed nothing it shouldn't, in about 1.6 s; LOW caught 54-55
+     * in about 0.9 s and sometimes wrote English words in Bangla script.
+     */
+    fun checkThinkingLevel(model: String): String? = if (model.startsWith("gemini-3")) "MEDIUM" else null
 }
 
 /** What a Gemini API key from Google AI Studio looks like. */

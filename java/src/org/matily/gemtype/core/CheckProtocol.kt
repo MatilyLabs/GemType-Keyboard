@@ -126,6 +126,8 @@ object CheckProtocol {
             val original = o.opt("original") as? String ?: return@mapNotNull null
             val replacement = o.opt("replacement") as? String ?: return@mapNotNull null
             if (original.isEmpty() || original == replacement || !text.contains(original)) return@mapNotNull null
+            // A fix never needs letters of a script the text doesn't use (the model once put a Gurmukhi letter into Nepali).
+            if (!scriptsOf(replacement).all { it in scriptsOf(text) }) return@mapNotNull null
             Correction(original, replacement, o.optString("explanation", "").trim(), Correction.Type.parse(o.optString("type")))
         }
         return locate(text, found)
@@ -155,6 +157,19 @@ object CheckProtocol {
             if (placed.none { idx < it.end && end > it.start } && (!wholeWord || isWholeWord(text, original, idx))) return idx
             from = idx + 1
         }
+    }
+
+    /** The scripts of [s]'s letters (Latin, Bengali, Devanagari...); punctuation, digits and marks shared by all scripts don't count. */
+    internal fun scriptsOf(s: String): Set<Character.UnicodeScript> {
+        val scripts = HashSet<Character.UnicodeScript>()
+        var i = 0
+        while (i < s.length) {
+            val cp = s.codePointAt(i)
+            val script = Character.UnicodeScript.of(cp)
+            if (script != Character.UnicodeScript.COMMON && script != Character.UnicodeScript.INHERITED) scripts.add(script)
+            i += Character.charCount(cp)
+        }
+        return scripts
     }
 
     /** [original] at [start] is not cut out of a longer word on either side. */

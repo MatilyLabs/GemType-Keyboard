@@ -149,10 +149,10 @@ class CheckProtocolTest {
         assertFalse(CheckProtocol.requestBody("x", "auto", null, null).getJSONObject("generationConfig").has("thinkingConfig"))
     }
 
-    @Test fun checkThinkingLevelIsLowOnGemini3AndNothingBefore() {
-        assertEquals("LOW", Choices.checkThinkingLevel(Choices.DEFAULT_MODEL))
-        assertEquals("LOW", Choices.checkThinkingLevel(Choices.QUALITY_MODEL))
-        assertEquals("LOW", Choices.checkThinkingLevel("gemini-3.8-pro"))
+    @Test fun checkThinkingLevelIsMediumOnGemini3AndNothingBefore() {
+        assertEquals("MEDIUM", Choices.checkThinkingLevel(Choices.DEFAULT_MODEL))
+        assertEquals("MEDIUM", Choices.checkThinkingLevel(Choices.QUALITY_MODEL))
+        assertEquals("MEDIUM", Choices.checkThinkingLevel("gemini-3.8-pro"))
         assertNull(Choices.checkThinkingLevel("gemini-2.0-flash"))
         assertNull(Choices.checkThinkingLevel("gemma-4"))
         // Rewrites keep their own level.
@@ -249,6 +249,19 @@ class CheckProtocolTest {
         assertEquals("Thanks for the invite, I will try my best to come.", Corrections.apply(text, found))
     }
 
+    @Test fun aFixWithLettersFromAnotherScriptIsDropped() {
+        // Seen on the eval: "हरेक" came back as "हरेਕ" (a Gurmukhi letter inside Nepali).
+        val text = "म हरेक दिन बिहान भात खान्छ।"
+        assertTrue(parse(text, item("म हरेक दिन बिहान भात खान्छ।", "म हरेਕ दिन बिहान भात खान्छु।")).isEmpty())
+        assertEquals(1, parse(text, item("खान्छ।", "खान्छु।")).size)
+    }
+
+    @Test fun aFixMayUseScriptsTheTextAlreadyHas() {
+        val text = "আমি আজ office যাচ্ছি না, কারন আমার শরীর খারাপ।"
+        assertEquals(1, parse(text, item("কারন", "কারণ")).size)
+        assertEquals(1, parse("i dont know.", item("i dont", "I don't")).size)
+    }
+
     @Test fun aFragmentWithNoWholeWordMatchIsStillLocated() {
         val found = parse("I recieved it.", item("recieved", "received"))
         assertEquals(1, found.size)
@@ -340,7 +353,7 @@ class CheckProtocolTest {
         val found = runBlocking { client.check("we dont know", config, "English") }
         assertEquals(listOf(3), found.map { it.start })
         val gen = bodies.single().getJSONObject("generationConfig")
-        assertEquals("LOW", gen.getJSONObject("thinkingConfig").getString("thinkingLevel"))
+        assertEquals("MEDIUM", gen.getJSONObject("thinkingConfig").getString("thinkingLevel"))
         assertTrue(gen.getJSONObject("responseSchema").getJSONObject("properties").has("corrections"))
         assertTrue(systemOf(bodies.single()).contains("typing on an English keyboard"))
     }
