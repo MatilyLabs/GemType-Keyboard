@@ -72,7 +72,7 @@ object GeminiProtocol {
             "Fill the two fields in order. " +
             "\"native\": first work out what the writer means, and write it as correct, natural $target in its native script, with proper spelling, grammar and punctuation (its own full stop, such as \"।\"). " +
             "Fix typos and short forms silently and read them as $target, never as English$shortForms. " +
-            "Add nothing. Keep names, brands, URLs, numbers, emoji and words normally written in English. " +
+            "Add nothing. Write everyday English words the way people write them in that script (meeting, office, laptop, call → the native-script spelling); keep only names, brands, URLs, emails, numbers and emoji as they are. " +
             "\"rewritten\": then, based on that understanding, do this with the text: ${action.layeredTask}$output " +
             "Write only the text in each field — no preamble, no quotes, no markdown."
     }

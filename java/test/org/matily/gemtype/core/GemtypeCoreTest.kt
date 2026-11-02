@@ -120,7 +120,7 @@ class GemtypeCoreTest {
         assertTrue(system.contains("Work out what the writer means, then write it as correct, natural Bangla in its native script"))
         assertTrue(system.contains("Fix mistakes silently."))
         assertTrue(system.contains("Do not add new content, change the meaning or tone, or translate it into another language."))
-        assertTrue(system.contains("Keep names, brands, URLs, numbers, emoji and words normally written in English as they are."))
+        assertTrue(system.contains("keep only names, brands, URLs, emails, numbers and emoji as they are."))
         assertTrue(system.endsWith("Return only the resulting text — no preamble, no quotes, no markdown."))
         assertFalse(system.contains("{language}"))
         // It changes the script on purpose: no "keep the language" line.

@@ -43,7 +43,7 @@ enum class Action(val label: String, val resultLabel: String, val prompt: String
             "broken grammar and English words mixed in. Work out what the writer means, then write it as correct, natural {language} " +
             "in its native script, with proper spelling, grammar and punctuation (its own sentence end, such as \"।\", where the language uses one). " +
             "Fix mistakes silently. Do not add new content, change the meaning or tone, or translate it into another language. " +
-            "Keep names, brands, URLs, numbers, emoji and words normally written in English as they are.",
+            "Write everyday English words the way people write them in that script (meeting, office, laptop, call → the native-script spelling); keep only names, brands, URLs, emails, numbers and emoji as they are.",
     ),
     ENGLISH(
         "English", "In English",
