@@ -154,7 +154,7 @@
     <string name="gemtype_setup_clipboard_empty">Nothing to paste</string>
     <string name="gemtype_setup_key_ok">✓ Key works — saved</string>
     <string name="gemtype_setup_key_already_saved">✓ A key is already saved</string>
-    <string name="gemtype_setup_key_privacy">Your key is stored encrypted on this phone. Your text goes to Google only when you tap GemType.</string>
+    <string name="gemtype_setup_key_privacy">Your key is stored encrypted on this phone. Your text goes to Google only when you tap GemType, or while you type in English with \"Check as you type\" on.</string>
 
     <!-- Step 6: ready -->
     <string name="gemtype_setup_ready_title">You\'re ready</string>

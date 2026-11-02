@@ -117,7 +117,7 @@
     <!-- Title of the privacy settings screen [CHAR LIMIT=33] -->
     <string name="settings_screen_privacy">Privacy</string>
     <!-- Statement shown at the top of the privacy settings screen -->
-    <string name="privacy_statement">Typing stays on your device. GemType\'s keyboard learns words locally and never sends what you type anywhere. Text is sent only when you tap GemType: then the text you chose is sent directly from your phone to Google\'s Gemini API, using your own API key, to get the fix. GemType has no servers, ads, or analytics. Language packs are downloaded from the open dictionary project when you add a language.</string>
+    <string name="privacy_statement">Typing stays on your device: GemType\'s keyboard learns words locally. Text is sent only when you tap GemType, or while you type in English if \"Check as you type\" is on (Settings → GemType): then that text is sent directly from your phone to Google\'s Gemini API, using your own API key, to get the fix. GemType has no servers, ads, or analytics. Language packs are downloaded from the open dictionary project when you add a language.</string>
     <!-- Privacy screen section header for learned-word controls [CHAR LIMIT=33] -->
     <string name="privacy_section_learned">Learned words</string>
     <!-- Privacy screen section header for history controls [CHAR LIMIT=33] -->
