@@ -3,10 +3,21 @@
 package org.matily.gemtype.core
 
 /** Style rules shared by the five rewrites. */
+/** Which full stop each language uses; Gemini otherwise puts "।" into Telugu or Kannada. */
+internal const val FULL_STOPS =
+    "\"।\" in Bangla, Assamese, Hindi, Nepali, Punjabi, Odia, Sanskrit and Maithili; \"۔\" in Urdu; " +
+        "\".\" in English, Marathi, Gujarati, Tamil, Telugu, Kannada, Malayalam, Sinhala, Arabic and most others"
+
+/** Keep how the person talks: spoken forms and the familiar or polite "you" they chose. */
+internal const val KEEP_REGISTER =
+    "Keep the writer's spoken style and level of formality: casual spoken forms stay spoken (do not turn them into formal written forms), " +
+        "and the familiar or polite \"you\" the writer chose stays the same."
+
 private const val NATURAL =
     "Write it the way a fluent native speaker would write this kind of message (chat or email): natural, conversational where the text is casual, never stiff. " +
+        "$KEEP_REGISTER " +
         "Natural is not careless: always use correct punctuation — commas, question marks, and each sentence ending with the " +
-        "language's own full stop (\"।\" in Bangla, Hindi and Nepali, \"۔\" in Urdu, \".\" in English). " +
+        "language's own full stop ($FULL_STOPS). " +
         "Add nothing new. Keep names, URLs, numbers, emoji and line breaks, and keep English words in text that mixes languages."
 
 /**
@@ -41,8 +52,8 @@ enum class Action(val label: String, val resultLabel: String, val prompt: String
         "Native script", "In native script",
         "The text is {language} typed with English (Latin) letters, quickly and possibly with typos, missing letters, wrong spellings, " +
             "broken grammar and English words mixed in. Work out what the writer means, then write it as correct, natural {language} " +
-            "in its native script, with proper spelling, grammar and punctuation (its own sentence end, such as \"।\", where the language uses one). " +
-            "Fix mistakes silently. Do not add new content, change the meaning or tone, or translate it into another language. " +
+            "in its native script, with proper spelling, grammar and punctuation (sentence ends: $FULL_STOPS). " +
+            "Fix mistakes silently. $KEEP_REGISTER Do not add new content, change the meaning or tone, or translate it into another language. " +
             "Write everyday English words the way people write them in that script (meeting, office, laptop, call → the native-script spelling); keep only names, brands, URLs, emails, numbers and emoji as they are.",
     ),
     ENGLISH(

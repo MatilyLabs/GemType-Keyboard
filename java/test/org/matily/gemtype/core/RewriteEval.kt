@@ -91,7 +91,10 @@ class RewriteEval {
         val config = GemtypeConfig(key, model, Choices.AUTO_LANGUAGE)
 
         val reports = levels.map { thinking ->
+            var stop: String? = null
+            var limited = 0
             val results = cases.mapIndexed { i, c ->
+                stop?.let { return@mapIndexed Result(c, null, null, it, 0) }
                 if (i > 0) runBlocking { delay(gapMs) }
                 val target = (c.romanized ?: c.target)?.let { Romanized.englishName(it) }
                 var output: String? = null
@@ -99,7 +102,7 @@ class RewriteEval {
                 var error: String? = null
                 var ms = 0L
                 // Patient retries on a rate limit (not timed); anything else is recorded as the case's error.
-                for (attempt in 1..4) {
+                for (attempt in 1..3) {
                     val start = System.nanoTime()
                     try {
                         val rewrite = runBlocking { client.refine(c.text, c.action, config, target, thinking) }
@@ -115,6 +118,7 @@ class RewriteEval {
                         runBlocking { delay(30_000L * attempt) }
                     }
                 }
+                stop = stopReason(error, if (error?.startsWith("RATE_LIMITED") == true) ++limited else 0.also { limited = 0 })
                 Result(c, output, readAs, error, ms)
             }
             report("$model, thinking ${thinking ?: "none"}", results).also { println(it) }
@@ -122,6 +126,13 @@ class RewriteEval {
         File("build").mkdirs()
         File("build/rewrite-eval.txt").writeText(reports.joinToString("\n" + "=".repeat(60) + "\n\n"))
         assertTrue(reports.isNotEmpty())
+    }
+
+    /** No point going on after a bad key, or once two cases in a row stay rate limited (the free daily quota is likely used up). */
+    private fun stopReason(error: String?, limitedInARow: Int): String? = when {
+        error?.startsWith("API_KEY_ERROR") == true -> "skipped: the key was refused"
+        limitedInARow >= 2 -> "skipped: Gemini kept saying the limit is reached (the free daily quota resets at midnight Pacific time)"
+        else -> null
     }
 
     private fun report(model: String, results: List<Result>): String {

@@ -70,7 +70,7 @@ object GeminiProtocol {
                 "Use correct punctuation with English marks: commas, question marks, and a \".\" at the end of each sentence."
         return "The text is $target typed with English (Latin) letters, quickly, with typos, short forms and English words mixed in. " +
             "Fill the two fields in order. " +
-            "\"native\": first work out what the writer means, and write it as correct, natural $target in its native script, with proper spelling, grammar and punctuation (its own full stop, such as \"।\"). " +
+            "\"native\": first work out what the writer means, and write it as correct, natural $target in its native script, with proper spelling, grammar and punctuation (sentence ends: $FULL_STOPS). $KEEP_REGISTER " +
             "Fix typos and short forms silently and read them as $target, never as English$shortForms. " +
             "Add nothing. Write everyday English words the way people write them in that script (meeting, office, laptop, call → the native-script spelling); keep only names, brands, URLs, emails, numbers and emoji as they are. " +
             "\"rewritten\": then, based on that understanding, do this with the text: ${action.layeredTask}$output " +
@@ -139,4 +139,25 @@ object GeminiProtocol {
 
     /** Like [parseRewrite], for callers that only want the text. */
     fun parseResponse(status: Int, raw: String): String = parseRewrite(status, raw).text
+
+    /**
+     * True when [text] mixes two non-Latin scripts and one of them is only a few letters: a model slip such as
+     * Telugu letters inside a Tamil word. Latin is ignored, since English words in native text are normal.
+     */
+    fun hasStrayScript(text: String): Boolean {
+        val counts = HashMap<Character.UnicodeScript, Int>()
+        var i = 0
+        while (i < text.length) {
+            val cp = text.codePointAt(i)
+            if (Character.isLetter(cp) || Character.getType(cp).let { it == Character.NON_SPACING_MARK.toInt() || it == Character.COMBINING_SPACING_MARK.toInt() }) {
+                val script = Character.UnicodeScript.of(cp)
+                if (script != Character.UnicodeScript.LATIN && script != Character.UnicodeScript.COMMON && script != Character.UnicodeScript.INHERITED) {
+                    counts[script] = (counts[script] ?: 0) + 1
+                }
+            }
+            i += Character.charCount(cp)
+        }
+        if (counts.size < 2) return false
+        return counts.values.min() * 5 <= counts.values.sum()
+    }
 }

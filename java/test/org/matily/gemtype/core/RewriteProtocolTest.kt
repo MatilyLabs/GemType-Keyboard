@@ -148,4 +148,26 @@ class RewriteProtocolTest {
         assertEquals(0.9, gen(sent).getDouble("temperature"), 0.0)
         assertEquals("MEDIUM", gen(sent).getJSONObject("thinkingConfig").getString("thinkingLevel"))
     }
+
+    @Test fun strayLettersOfAnotherScriptAreSpotted() {
+        // From the eval: Telugu "ంగ్" inside a Tamil and a Kannada word.
+        assertTrue(GeminiProtocol.hasStrayScript("நீ மீட்டிంగ్ முடிஞ்சதும் கால் பண்ணு."))
+        assertTrue(GeminiProtocol.hasStrayScript("ನೀವು ಮೀಟಿంగ್ ನೋಡಿಕೊಳ್ಳಿ."))
+        assertFalse(GeminiProtocol.hasStrayScript("நீ மீட்டிங் முடிஞ்சதும் கால் பண்ணு."))
+        assertFalse(GeminiProtocol.hasStrayScript("আমি আজ office যাচ্ছি না।"))
+        assertFalse(GeminiProtocol.hasStrayScript("I have nothing to say to you."))
+    }
+
+    @Test fun aRewriteWithStrayLettersIsAskedForOnceMore() {
+        val answers = ArrayDeque(listOf("நீ மீட்டிంగ్ முடிஞ்சதும் கால் பண்ணு.", "நீ மீட்டிங் முடிஞ்சதும் கால் பண்ணு."))
+        var calls = 0
+        val client = GeminiClient { _, _, _ ->
+            calls++
+            HttpResult(200, answer(JSONObject().put("rewritten", answers.removeFirst()).toString()))
+        }
+        val config = GemtypeConfig("AIzaMOCK", Choices.DEFAULT_MODEL, Choices.AUTO_LANGUAGE)
+        val result = runBlocking { client.refine("நீ மீட்டிங் முடிஞ்சதும் கால் பண்ணு", Action.IMPROVE, config) }
+        assertEquals("நீ மீட்டிங் முடிஞ்சதும் கால் பண்ணு.", result.text)
+        assertEquals(2, calls)
+    }
 }

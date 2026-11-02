@@ -20,11 +20,17 @@ class GeminiClient(private val transport: Transport) {
         thinkingLevel: String? = Choices.rewriteThinkingLevel(config.model), avoid: List<String> = emptyList(),
     ): Rewrite {
         requireKey(config)
-        return withFallbacks(thinkingLevel) { level ->
-            val body = GeminiProtocol.requestBody(text, action, config.language, level, target, avoid).toString()
-            val result = transport.post(config.model, config.apiKey, body)
-            GeminiProtocol.parseRewrite(result.status, result.body)
-        }
+        var answer: Rewrite
+        var attempt = 0
+        do {
+            answer = withFallbacks(thinkingLevel) { level ->
+                val body = GeminiProtocol.requestBody(text, action, config.language, level, target, avoid).toString()
+                val result = transport.post(config.model, config.apiKey, body)
+                GeminiProtocol.parseRewrite(result.status, result.body)
+            }
+            // A stray letter of another script (Telugu "ంగ్" inside Tamil, seen on the eval): ask once more.
+        } while (GeminiProtocol.hasStrayScript(answer.text) && ++attempt < 2)
+        return answer
     }
 
     /**

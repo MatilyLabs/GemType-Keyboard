@@ -77,14 +77,17 @@ class ProofreadEval {
             ?.map { it.trim().uppercase() }?.map { if (it == "NONE") null else it } ?: listOf(Choices.checkThinkingLevel(model))
         val gapMs = System.getenv("GEMTYPE_EVAL_GAP_MS")?.toLongOrNull() ?: 4_000L
         val reports = levels.map { thinking ->
+            var stop: String? = null
+            var limited = 0
             val results = cases.mapIndexed { i, c ->
+                stop?.let { return@mapIndexed Result(c, emptyList(), it, 0) }
                 if (i > 0) runBlocking { delay(gapMs) }
                 val config = GemtypeConfig(key, model, Choices.AUTO_LANGUAGE)
                 var error: String? = null
                 var corrections = emptyList<Correction>()
                 var ms = 0L
                 // Patient retries on a rate limit (not timed); anything else is recorded as the case's error.
-                for (attempt in 1..4) {
+                for (attempt in 1..3) {
                     val start = System.nanoTime()
                     try {
                         corrections = runBlocking { client.check(c.text, config, c.keyboard, thinking) }
@@ -98,6 +101,7 @@ class ProofreadEval {
                         runBlocking { delay(30_000L * attempt) }
                     }
                 }
+                stop = stopReason(error, if (error?.startsWith("RATE_LIMITED") == true) ++limited else 0.also { limited = 0 })
                 Result(c, corrections, error, ms)
             }
             report("$model, thinking ${thinking ?: "none"}", results).also { println(it) }
@@ -105,6 +109,13 @@ class ProofreadEval {
         File("build").mkdirs()
         File("build/proofread-eval.txt").writeText(reports.joinToString("\n" + "=".repeat(60) + "\n\n"))
         assertTrue(reports.isNotEmpty())
+    }
+
+    /** No point going on after a bad key, or once two cases in a row stay rate limited (the free daily quota is likely used up). */
+    private fun stopReason(error: String?, limitedInARow: Int): String? = when {
+        error?.startsWith("API_KEY_ERROR") == true -> "skipped: the key was refused"
+        limitedInARow >= 2 -> "skipped: Gemini kept saying the limit is reached (the free daily quota resets at midnight Pacific time)"
+        else -> null
     }
 
     private fun report(model: String, results: List<Result>): String {
