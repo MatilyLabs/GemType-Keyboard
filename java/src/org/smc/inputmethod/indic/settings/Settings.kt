@@ -229,8 +229,9 @@ class Settings private constructor() : SharedPreferences.OnSharedPreferenceChang
         }
 
         @JvmStatic
+        // Off by default in GemType: "Check as you type" suggests fixes instead of silent replacements.
         fun readAutoCorrectEnabled(prefs: SharedPreferences, res: Resources): Boolean =
-            prefs.getBoolean(PREF_AUTO_CORRECTION, true)
+            prefs.getBoolean(PREF_AUTO_CORRECTION, false)
 
         @JvmStatic
         fun readPlausibilityThreshold(res: Resources): Float =

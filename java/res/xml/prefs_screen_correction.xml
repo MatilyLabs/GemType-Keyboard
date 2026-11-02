@@ -33,7 +33,7 @@
             android:key="pref_key_auto_correction"
             android:title="@string/auto_correction"
             android:summary="@string/auto_correction_summary"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:persistent="true" />
     </PreferenceCategory>
 
