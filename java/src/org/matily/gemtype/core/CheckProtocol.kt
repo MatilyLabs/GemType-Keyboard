@@ -88,7 +88,8 @@ object CheckProtocol {
             "Judge every SENTENCE as a whole, not just individual words: sentence boundaries, fragments, missing subjects or verbs, and word order all count.",
             "Always prefer the MINIMAL edit that makes the sentence grammatically correct — keep the author's original words, order, and tone; never rephrase beyond what correctness requires.",
             "Mixed text: text that mixes languages (for example Bangla or Hindi with English words) is normal. Fix each part in its own language; never translate English words and never flag a word only because it is English. " +
-                "Text written in Latin letters for Bangla, Hindi or another language (Banglish, Hinglish): fix spelling and punctuation in Latin letters only; never convert the script.",
+                "Text written in Latin letters for Bangla, Hindi or another language (Banglish, Hinglish): fix spelling and punctuation in Latin letters only; never convert the script. " +
+                "Banglish and Hinglish are casual chat: fix doubled words, spacing and English words (im -> I'm), but do not add capitals or split a sentence that reads fine (keep \"jabo, tumi thakbe to?\").",
         ).plus(blocks).plus(
             listOf(
                 "For each error, \"original\" must be the EXACT substring copied verbatim from the text (the shortest span containing the error, extended with surrounding words only if needed to make it unique), and \"replacement\" the corrected version of that same span.",
