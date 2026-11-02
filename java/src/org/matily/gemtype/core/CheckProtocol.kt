@@ -38,9 +38,9 @@ object CheckProtocol {
             "Fix hasanta, ya-phala and reph errors. Confusing ি/ী or ু/ূ is a spelling error. " +
             "A sentence ends with \"।\", not \".\": report every \".\" that ends a Bangla sentence; keep \"?\" and \"!\".",
         "hindi" to "Hindi: check gender and number agreement of verbs, postpositions and adjectives. " +
-            "Fix matra errors, missing nukta, and chandrabindu vs anusvara (मै→मैं, है/हैं with plural subjects). " +
+            "Fix matra errors, missing nukta, and chandrabindu vs anusvara (मै→मैं, पढना→पढ़ना, बडा→बड़ा, है/हैं with plural subjects). " +
             "A sentence ends with \"।\", not \".\": report every \".\" that ends a Hindi sentence.",
-        "urdu" to "Urdu: use Urdu punctuation (۔ ، ؟). Check gender and number agreement of verbs and adjectives.",
+        "urdu" to "Urdu: use Urdu punctuation (۔ ، ؟): report every \".\" that ends an Urdu sentence (it should be \"۔\"). Check gender and number agreement of verbs and adjectives.",
         "nepali" to "Nepali: a sentence ends with \"।\", not \".\". Check that verbs and adjectives agree with the subject.",
     )
     private val SPECIFIC = listOf("english", "bangla", "hindi", "urdu", "nepali")
@@ -81,7 +81,7 @@ object CheckProtocol {
             "Error categories to report:",
             "- grammar: subject-verb agreement, wrong verb tense or form, pronoun case, wrong or missing articles/prepositions, word order, and RUN-ON SENTENCES or comma splices — two sentences joined without punctuation is always an error (fix by adding the missing period or comma, e.g. \"inviting me I think\" -> \"inviting me. I think\").",
             "- spelling: misspelled words and wrong homophones (their/there, you're/your, its/it's).",
-            "- punctuation: missing, extra, or misplaced punctuation; wrong spacing around punctuation (e.g. a space before a period like \"this .\" -> \"this.\"); missing capitalization at the start of EVERY sentence (check each sentence, not only the first).",
+            "- punctuation: missing, extra, or misplaced punctuation; wrong spacing around punctuation (e.g. a space before a period like \"this .\" -> \"this.\"); missing capitalization at the start of EVERY sentence — check each sentence, not only the first (\"we left. bring food\" -> \"We left. Bring food\").",
             "- style: phrasing that is clearly awkward, confusing, or unidiomatic — something a fluent writer would not write (e.g. \"a good idea how to implement this\" -> \"a good idea; how should we implement this?\"). Suggest a natural rewording.",
             "Phone typing: text is typed fast on a phone, so expect and fix lowercase \"i\" as a pronoun, missing apostrophes (dont, im, cant, wont, its/it's), doubled words, a missing capital at the start of a sentence, double spaces, and a missing space after punctuation.",
             "Do NOT flag: personal names, slang or informal tone that is written correctly, or pure taste preferences.",

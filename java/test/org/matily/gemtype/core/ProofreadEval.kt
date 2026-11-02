@@ -17,7 +17,7 @@ import java.io.File
  *     cd java && GEMTYPE_EVAL_KEY=... ./gradlew testOnlineDebugUnitTest --tests '*ProofreadEval*' -i
  *
  * Optional: GEMTYPE_EVAL_MODEL (default [Choices.DEFAULT_MODEL]), GEMTYPE_EVAL_THINKING (MINIMAL, LOW, MEDIUM,
- * HIGH or NONE; default the app's [Choices.checkThinkingLevel]), GEMTYPE_EVAL_GAP_MS (pause between requests,
+ * HIGH or NONE, or a comma-separated list to compare; default the app's [Choices.checkThinkingLevel]), GEMTYPE_EVAL_GAP_MS (pause between requests,
  * default 4000, to stay under the free tier's per-minute limit), GEMTYPE_EVAL_API_BASE (a mock server),
  * GEMTYPE_EVAL_CASES (another cases file). Prints a per-language table and the failures, and writes
  * build/proofread-eval.txt. The key is never printed or written.
@@ -72,38 +72,39 @@ class ProofreadEval {
         val base = System.getenv("GEMTYPE_EVAL_API_BASE")?.takeIf { it.isNotBlank() }
             ?: "https://generativelanguage.googleapis.com/v1beta/models"
         val client = GeminiClient(HttpTransport(base))
-        val thinking = System.getenv("GEMTYPE_EVAL_THINKING")?.takeIf { it.isNotBlank() }?.uppercase()
-            ?.let { if (it == "NONE") null else it } ?: Choices.checkThinkingLevel(model)
+        // A comma-separated list runs the whole set once per level, to compare speed and accuracy.
+        val levels = System.getenv("GEMTYPE_EVAL_THINKING")?.takeIf { it.isNotBlank() }?.split(',')
+            ?.map { it.trim().uppercase() }?.map { if (it == "NONE") null else it } ?: listOf(Choices.checkThinkingLevel(model))
         val gapMs = System.getenv("GEMTYPE_EVAL_GAP_MS")?.toLongOrNull() ?: 4_000L
-
-        val results = cases.mapIndexed { i, c ->
-            if (i > 0) runBlocking { delay(gapMs) }
-            val config = GemtypeConfig(key, model, Choices.AUTO_LANGUAGE)
-            var error: String? = null
-            var corrections = emptyList<Correction>()
-            var ms = 0L
-            // Patient retries on a rate limit (not timed); anything else is recorded as the case's error.
-            for (attempt in 1..4) {
-                val start = System.nanoTime()
-                try {
-                    corrections = runBlocking { client.check(c.text, config, c.keyboard, thinking) }
-                    error = null
-                    ms = (System.nanoTime() - start) / 1_000_000
-                    break
-                } catch (e: GeminiException) {
-                    error = "${e.kind}: ${e.message}"
-                    ms = (System.nanoTime() - start) / 1_000_000
-                    if (e.kind != GeminiException.Kind.RATE_LIMITED) break
-                    runBlocking { delay(30_000L * attempt) }
+        val reports = levels.map { thinking ->
+            val results = cases.mapIndexed { i, c ->
+                if (i > 0) runBlocking { delay(gapMs) }
+                val config = GemtypeConfig(key, model, Choices.AUTO_LANGUAGE)
+                var error: String? = null
+                var corrections = emptyList<Correction>()
+                var ms = 0L
+                // Patient retries on a rate limit (not timed); anything else is recorded as the case's error.
+                for (attempt in 1..4) {
+                    val start = System.nanoTime()
+                    try {
+                        corrections = runBlocking { client.check(c.text, config, c.keyboard, thinking) }
+                        error = null
+                        ms = (System.nanoTime() - start) / 1_000_000
+                        break
+                    } catch (e: GeminiException) {
+                        error = "${e.kind}: ${e.message}"
+                        ms = (System.nanoTime() - start) / 1_000_000
+                        if (e.kind != GeminiException.Kind.RATE_LIMITED) break
+                        runBlocking { delay(30_000L * attempt) }
+                    }
                 }
+                Result(c, corrections, error, ms)
             }
-            Result(c, corrections, error, ms)
+            report("$model, thinking ${thinking ?: "none"}", results).also { println(it) }
         }
-        val report = report("$model, thinking ${thinking ?: "default"}", results)
-        println(report)
         File("build").mkdirs()
-        File("build/proofread-eval.txt").writeText(report)
-        assertTrue(results.isNotEmpty())
+        File("build/proofread-eval.txt").writeText(reports.joinToString("\n" + "=".repeat(60) + "\n\n"))
+        assertTrue(reports.isNotEmpty())
     }
 
     private fun report(model: String, results: List<Result>): String {
