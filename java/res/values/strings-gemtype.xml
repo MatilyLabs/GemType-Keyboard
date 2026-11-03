@@ -90,6 +90,7 @@
     <string name="gemtype_language_auto">Auto-detect (keep the text\'s language)</string>
     <string name="gemtype_section_keyboard">On the keyboard</string>
     <string name="gemtype_live_check">Check as you type</string>
+    <string name="gemtype_setup_live_check_summary">Off by default. When on, the text you type in English is sent to Google\'s Gemini API with your key after you pause, to count mistakes on the GemType key. Never from password, email, web address or number fields. You can turn it off any time in GemType settings.</string>
     <string name="gemtype_live_check_summary">Check your text for mistakes after you pause and show how many were found on the GemType key. Sends your text to Gemini while you type.</string>
     <string name="gemtype_show_convert_pill">Show conversion pill</string>
     <string name="gemtype_show_convert_pill_summary">Offer to turn text typed in English letters into your language</string>
@@ -169,7 +170,7 @@
     <!-- About screen -->
     <string name="about_made_by">Made by Matily\nDeveloped by Ripon C. Malo</string>
     <string name="about_privacy">Privacy policy</string>
-    <string name="about_privacy_url" translatable="false">https://gemtype.matily.org/privacy</string>
+    <string name="about_privacy_url" translatable="false">https://github.com/MatilyLabs/GemType-Keyboard/blob/main/PRIVACY.md</string>
     <string name="about_contact">Contact</string>
     <string name="about_contact_url" translatable="false">mailto:support@matily.org</string>
     <string name="about_contact_email" translatable="false">support@matily.org</string>

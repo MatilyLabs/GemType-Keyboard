@@ -10,6 +10,11 @@ internal object CheckPrefs {
     /** Preference key of the "Check as you type" switch (also in prefs_screen_gemtype.xml). */
     const val LIVE_CHECK = "gemtype_live_check"
 
+    /** Off until the person turns it on (setup's key step or GemType settings): it sends typed text. */
     fun liveCheck(context: Context): Boolean =
-        PreferenceManagerCompat.getDeviceSharedPreferences(context).getBoolean(LIVE_CHECK, true)
+        PreferenceManagerCompat.getDeviceSharedPreferences(context).getBoolean(LIVE_CHECK, false)
+
+    fun setLiveCheck(context: Context, on: Boolean) {
+        PreferenceManagerCompat.getDeviceSharedPreferences(context).edit().putBoolean(LIVE_CHECK, on).apply()
+    }
 }

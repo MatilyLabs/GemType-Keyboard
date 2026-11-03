@@ -50,9 +50,11 @@ native/host-harness/futo/
 # Kotlin compiler session cache
 java/.kotlin/
 
-# Docs stay local; README.md is the only Markdown file in the repository
+# Docs stay local except README, PRIVACY and GESTURETYPING
 *.md
 !/README.md
+!/PRIVACY.md
+!/GESTURETYPING.md
 
 # Release signing and Play upload credentials (never commit)
 *.jks

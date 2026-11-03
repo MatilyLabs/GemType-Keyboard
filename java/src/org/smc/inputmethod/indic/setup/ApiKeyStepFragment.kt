@@ -26,12 +26,14 @@ import androidx.lifecycle.repeatOnLifecycle
 
 import com.android.inputmethod.latin.R
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputEditText
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import org.matily.gemtype.CheckPrefs
 import org.matily.gemtype.GemTypeSettings
 import org.matily.gemtype.KeyTester
 import org.matily.gemtype.core.GeminiKey
@@ -68,6 +70,12 @@ internal class ApiKeyStepFragment : Fragment() {
         if (host.standalone) {
             continueButton.setText(R.string.gemtype_setup_done)
             skip.setText(R.string.gemtype_setup_not_now)
+        }
+
+        // Check as you type sends what you type, so it stays off until the person switches it on here.
+        view.findViewById<MaterialSwitch>(R.id.key_live_check).apply {
+            isChecked = CheckPrefs.liveCheck(requireContext())
+            setOnCheckedChangeListener { _, on -> CheckPrefs.setLiveCheck(requireContext(), on) }
         }
 
         view.findViewById<View>(R.id.key_get).setOnClickListener { openAiStudio() }

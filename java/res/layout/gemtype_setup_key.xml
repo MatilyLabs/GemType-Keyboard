@@ -109,6 +109,23 @@
                 android:paddingHorizontal="4dp"
                 android:text="@string/gemtype_setup_key_privacy"
                 android:textAppearance="?attr/textAppearanceBodySmall" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/key_live_check"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:paddingHorizontal="4dp"
+                android:text="@string/gemtype_live_check"
+                android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+            <TextView
+                style="@style/GemTypeSetupHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="4dp"
+                android:text="@string/gemtype_setup_live_check_summary"
+                android:textAppearance="?attr/textAppearanceBodySmall" />
         </LinearLayout>
     </ScrollView>
 

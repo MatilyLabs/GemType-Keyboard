@@ -64,7 +64,7 @@
             android:key="gemtype_live_check"
             android:title="@string/gemtype_live_check"
             android:summary="@string/gemtype_live_check_summary"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:persistent="true" />
         <CheckBoxPreference
             android:key="gemtype_show_convert_pill"

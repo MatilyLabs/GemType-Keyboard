@@ -56,9 +56,9 @@ GemType is a grammar checker keyboard for Android. It checks and corrects your w
 - The **Fix clipboard** tile in Quick Settings corrects text you copied.
 
 ### Private by design
-- Your typing stays on your phone. Text is sent only when you tap GemType, or while check as you type is on for English, and it goes directly to Google's Gemini API with your key.
+- Your typing stays on your phone. Text is sent only when you tap GemType, or while check as you type is on for English (it is off until you turn it on), and it goes directly to Google's Gemini API with your key.
 - Your API key is stored encrypted on your device and is left out of backups.
-- No ads, no analytics, no accounts, no GemType servers. [Privacy policy](https://gemtype.matily.org/privacy).
+- No ads, no analytics, no accounts, no GemType servers. [Privacy policy](PRIVACY.md).
 
 ## Install
 

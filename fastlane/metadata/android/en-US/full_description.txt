@@ -24,7 +24,7 @@ FIX TEXT FROM OTHER APPS
 
 PRIVATE BY DESIGN
 - No ads, no analytics and no GemType servers.
-- Your typing stays on your phone. Text is sent only when you tap GemType, or while check as you type is on for English text, and it goes directly to Google's Gemini API with your key. You can turn check as you type off.
+- Your typing stays on your phone. Text is sent only when you tap GemType, or while check as you type is on for English text, and it goes directly to Google's Gemini API with your key. Check as you type is off until you turn it on.
 - Your API key is stored encrypted on your device and is left out of backups.
 - Requests made with a free-tier key fall under Google's free-tier terms, which allow Google to use them to improve its products. Use a paid-tier key if you prefer otherwise.
 
