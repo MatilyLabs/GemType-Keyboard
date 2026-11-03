@@ -59,8 +59,10 @@ android {
         applicationId = "org.matily.gemtype"
         minSdk = 21
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0.0-alpha1"
+        // Release builds get both from the tag (see .github/workflows/release.yml):
+        //   ./gradlew bundleOnlineRelease -Pgemtype.versionCode=100000 -Pgemtype.versionName=1.0.0
+        versionCode = (project.findProperty('gemtype.versionCode') ?: '1') as Integer
+        versionName = project.findProperty('gemtype.versionName') ?: "1.0.0-dev"
 
         // Content provider authority, derived from the applicationId (debug overrides it below).
         resValue "string", "authority", "${applicationId}.dictionarypack"
