@@ -54,7 +54,7 @@ java/.kotlin/
 *.md
 !/README.md
 !/PRIVACY.md
-!/GESTURETYPING.md
+
 
 # Release signing and Play upload credentials (never commit)
 *.jks
@@ -67,3 +67,4 @@ keystore.properties
 play-service-account*.json
 service-account*.json
 google-services.json
+GESTURETYPING.md
