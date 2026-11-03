@@ -42,14 +42,19 @@ jobs:
     env:
       HAS_PLAY_KEY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      # The keyboard engine (ime/) is a submodule; the other submodules are only needed to rebuild
+      # the prebuilt native libraries and dictionaries, so they are left out.
+      - name: Fetch the ime submodule
+        run: git submodule update --init --depth 1 ime
+
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Version from the tag
         env:
@@ -98,7 +103,7 @@ jobs:
           rm -f "$GEMTYPE_KEYSTORE"
           ls -l dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: GemType-${{ env.VERSION }}
           path: dist/
@@ -114,7 +119,7 @@ jobs:
 
       - name: Upload to Google Play (internal testing)
         if: env.HAS_PLAY_KEY == 'true'
-        uses: r0adkll/upload-google-play@v1.1.3
+        uses: r0adkll/upload-google-play@v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: org.matily.gemtype
