@@ -1,4 +1,4 @@
-# Makefile for building, installing and running Indic Keyboard.
+# Makefile for building, installing and running GemType.
 #
 # Run `make` (or `make help`) to list the available commands.
 #
@@ -44,7 +44,7 @@ TEST_APP_ACT := $(TEST_APP_PKG)/.MainActivity
 .DEFAULT_GOAL := help
 
 help: ## List available commands
-	@echo "Indic Keyboard - available make commands:"
+	@echo "GemType - available make commands:"
 	@echo
 	@grep -hE '^[a-zA-Z0-9_-]+:.*## ' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":[^#]*## "} {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -63,13 +63,13 @@ install: build ## Build and install the debug APK on a device
 
 # AVDs ship with a hardware keyboard, which hides the on-screen keyboard, so on an
 # emulator the IME is also forced to show.
-run: build ## Install, make Indic Keyboard the active IME and open the app
+run: build ## Install, make GemType the active IME and open the app
 	@$(WITH_DEVICE) $(ADB) install -r $(DEBUG_APK) && \
 	case "$$ANDROID_SERIAL" in emulator-*) $(ADB) shell settings put secure show_ime_with_hard_keyboard 1 ;; esac && \
 	$(ADB) shell ime enable $(PKG)/org.smc.inputmethod.indic.LatinIME && \
 	$(ADB) shell ime set $(PKG)/org.smc.inputmethod.indic.LatinIME && \
 	$(ADB) shell monkey -p $(PKG) -c android.intent.category.LAUNCHER 1 >/dev/null && \
-	echo "Indic Keyboard is now the active IME. Focus a text field to see it."
+	echo "GemType is now the active IME. Focus a text field to see it."
 
 test-app-build: ## Assemble the input-type test app's debug APK
 	cd $(TEST_APP_DIR) && $(GRADLEW) assembleDebug
@@ -78,12 +78,12 @@ test-app-install: test-app-build ## Build, install + launch the input test app o
 	@$(WITH_DEVICE) $(ADB) install -r $(TEST_APP_APK) && $(ADB) shell am start -n $(TEST_APP_ACT)
 
 # Signing config is read from .env (see the -include near the top):
-#   INDIC_KEYSTORE, INDIC_KEYSTORE_PASSWORD, INDIC_KEY_ALIAS, INDIC_KEY_PASSWORD
+#   GEMTYPE_KEYSTORE, GEMTYPE_KEYSTORE_PASSWORD, GEMTYPE_KEY_ALIAS, GEMTYPE_KEY_PASSWORD
 RELEASE_APK_DIR := java/build/outputs/apk/online/release
 AAPT2            = $(shell ls "$(ANDROID_SDK)/build-tools/"*/aapt2 2>/dev/null | sort | tail -1)
 release: ## Assemble the release APK (signing creds in .env)
-	@test -n "$$INDIC_KEYSTORE" -a -f "$$INDIC_KEYSTORE" || { \
-		echo "Release signing not configured. Set INDIC_KEYSTORE* in .env (see .env.sample)."; \
+	@test -n "$$GEMTYPE_KEYSTORE" -a -f "$$GEMTYPE_KEYSTORE" || { \
+		echo "Release signing not configured. Set GEMTYPE_KEYSTORE* in .env (see .env.sample)."; \
 		exit 1; }
 	cd java && $(GRADLEW) assembleOnlineRelease
 	@echo; echo "Release APKs in $(RELEASE_APK_DIR):"; \
@@ -116,8 +116,8 @@ offline-assets: ## Build language packs, then copy them into the offline flavor'
 	@echo "Bundled $$(ls $(OFFLINE_ASSETS_DIR)/*.zip | wc -l | tr -d ' ') packs into $(OFFLINE_ASSETS_DIR)"
 
 offline-release: offline-assets ## Assemble the offline release APK (signing creds in .env)
-	@test -n "$$INDIC_KEYSTORE" -a -f "$$INDIC_KEYSTORE" || { \
-		echo "Release signing not configured. Set INDIC_KEYSTORE* in .env (see .env.sample)."; \
+	@test -n "$$GEMTYPE_KEYSTORE" -a -f "$$GEMTYPE_KEYSTORE" || { \
+		echo "Release signing not configured. Set GEMTYPE_KEYSTORE* in .env (see .env.sample)."; \
 		exit 1; }
 	cd java && $(GRADLEW) assembleOfflineRelease
 	@echo; echo "Offline release APKs in $(OFFLINE_RELEASE_APK_DIR):"; \

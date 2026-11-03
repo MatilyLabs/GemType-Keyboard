@@ -100,7 +100,7 @@
 
         <!-- Activities -->
         <activity android:name="org.smc.inputmethod.indic.setup.SetupActivity"
-                android:theme="@style/Theme.IndicKeyboard.Setup"
+                android:theme="@style/Theme.GemType.Setup"
                 android:label="@string/english_ime_name"
                 android:icon="@mipmap/ic_launcher"
                 android:roundIcon="@mipmap/ic_launcher_round"
@@ -121,7 +121,7 @@
         </activity>
 
         <activity android:name="org.smc.inputmethod.indic.setup.SetupWizardActivity"
-                android:theme="@style/Theme.IndicKeyboard.Setup"
+                android:theme="@style/Theme.GemType.Setup"
                 android:label="@string/english_ime_name"
                 android:exported="true"
                 android:clearTaskOnLaunch="true"
@@ -134,7 +134,7 @@
         <!-- "Add your Gemini API key", opened from the keyboard's GemType panel in its own task
              so that finishing it returns to the app the user was typing in. -->
         <activity android:name="org.smc.inputmethod.indic.setup.GemTypeKeyActivity"
-                android:theme="@style/Theme.IndicKeyboard.Setup"
+                android:theme="@style/Theme.GemType.Setup"
                 android:label="@string/english_ime_name"
                 android:exported="false"
                 android:taskAffinity=""
@@ -184,7 +184,7 @@
         </service>
 
         <activity android:name="org.smc.inputmethod.indic.settings.SettingsActivity"
-                android:theme="@style/Theme.IndicKeyboard.Settings"
+                android:theme="@style/Theme.GemType.Settings"
                 android:exported="true"
                 android:label="@string/english_ime_settings">
             <intent-filter>
@@ -193,7 +193,7 @@
         </activity>
 
         <activity android:name="org.smc.inputmethod.indic.spellcheck.SpellCheckerSettingsActivity"
-                  android:theme="@style/Theme.IndicKeyboard.Settings"
+                  android:theme="@style/Theme.GemType.Settings"
                   android:exported="true"
                   android:label="@string/android_spell_checker_settings">
             <intent-filter>

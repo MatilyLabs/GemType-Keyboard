@@ -583,7 +583,7 @@ mobile devices. [CHAR LIMIT=25] -->
     <!-- Body of the status card when the active keyboard's name is unknown. -->
     <string name="setup_banner_switched_body_generic">Another keyboard is currently active. Switch back to keep typing in your languages.</string>
     <!-- Settings status card shown when this keyboard has been disabled in system settings; the placeholder is this app's name. -->
-    <string name="setup_banner_disabled_title"><xliff:g id="APPLICATION_NAME" example="Indic Keyboard">%1$s</xliff:g> is turned off</string>
+    <string name="setup_banner_disabled_title"><xliff:g id="APPLICATION_NAME" example="GemType">%1$s</xliff:g> is turned off</string>
     <string name="setup_banner_disabled_body">It was disabled in system settings, so it can\'t be selected right now.</string>
     <!-- Status card button that opens the system keyboard picker. [CHAR LIMIT=20] -->
     <string name="setup_banner_switch_back">Switch back</string>

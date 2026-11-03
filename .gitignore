@@ -49,3 +49,19 @@ native/host-harness/futo/
 
 # Kotlin compiler session cache
 java/.kotlin/
+
+# Docs stay local; README.md is the only Markdown file in the repository
+*.md
+!/README.md
+
+# Release signing and Play upload credentials (never commit)
+*.jks
+*.keystore
+*.p12
+*.pem
+keystore.properties
+.env.*
+!.env.sample
+play-service-account*.json
+service-account*.json
+google-services.json

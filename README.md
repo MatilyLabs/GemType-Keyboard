@@ -1,109 +1,130 @@
-GemType keyboard — a fork of Indic Keyboard with a built-in Gemini writing assistant (GemType). Licensed AGPL-3.0-or-later as a whole; original Indic Keyboard code remains Apache-2.0.
+<div align="center">
 
-## Indic Keyboard
+<img src=".github/assets/banner.svg" alt="GemType: AI grammar checker keyboard for Android. A sentence with mistakes is typed, GemType finds two mistakes and fixes them in one tap." width="100%" />
 
-![icon-image](https://gitlab.com/indicproject/indic-keyboard/-/raw/master/graphic-assets/ic_launcher-playstore.png)
+# GemType: AI Grammar Checker Keyboard for Android
 
-Indic Keyboard is a versatile keyboard for Android users who wish to type messages, compose emails and write in their own language in addition to English on their phone. You can use this application to type anywhere in your phone that you would normally type in English. It currently supports 31 languages.
+**Fix grammar, spelling and punctuation in any app, rewrite your tone in one tap, and type in 31 languages. Free, open source, and powered by your own Google Gemini API key.**
 
-## Download
+<a href="https://play.google.com/store/apps/details?id=org.matily.gemtype"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80" /></a>
+<a href="https://github.com/MatilyLabs/GemType-Keyboard/releases/latest"><img src="https://img.shields.io/badge/Download-APK-3d5afe?style=for-the-badge&logo=android&logoColor=white" alt="Download the APK" height="54" /></a>
 
-[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
-     alt="Get it on Google Play"
-     height="80">](https://play.google.com/store/apps/details?id=org.smc.inputmethod.indic)
-[<img src="https://f-droid.org/badge/get-it-on.png"
-     alt="Get it on F-Droid"
-     height="80">](https://f-droid.org/packages/org.smc.inputmethod.indic/)
+[![GitHub stars](https://img.shields.io/github/stars/MatilyLabs/GemType-Keyboard?style=flat&logo=github&color=f59e0b)](https://github.com/MatilyLabs/GemType-Keyboard/stargazers)
+[![Downloads](https://img.shields.io/github/downloads/MatilyLabs/GemType-Keyboard/total?color=10a37f&label=APK%20downloads)](https://github.com/MatilyLabs/GemType-Keyboard/releases)
+[![Latest release](https://img.shields.io/github/v/release/MatilyLabs/GemType-Keyboard?color=3d5afe&label=release)](https://github.com/MatilyLabs/GemType-Keyboard/releases/latest)
+[![Android 5.0+](https://img.shields.io/badge/Android-5.0%2B-3DDC84?logo=android&logoColor=white)](#install)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-D22128)](LICENSE)
 
-## Will my phone support it ?
+[Website](https://gemtype.matily.org) · [Features](#features) · [Install](#install) · [FAQ](#faq) · [GemType for browsers](#gemtype-for-chrome-edge-and-firefox)
 
-Indic keyboard supports Android version 4.1 and above (Jellybean, Kitkat and Lollipop). If you can see your language in its native script below you should be able to install and use it. 
+</div>
 
-Some phones may not support all the languages listed since the phone's maker shipped fonts only for some of these languages. Even then, rendering for some of the languages is not perfect on Android
+---
 
-## What languages (and layouts) are supported ?
+GemType is a grammar checker keyboard for Android. It checks and corrects your writing right where you type it, in messages, email, notes, social apps and the browser, explains every fix, and rewrites your text in one tap. It is a full keyboard with 31 languages, and it sends text only to Google's Gemini API with your own key. There are no GemType servers, no ads and no analytics.
 
-- Assamese Keyboard (অসমীয়া) - Inscript, Transliteration
-- Arabic Keyboard (العَرَبِيةُ‎‎)
-- Bengali Keyboard (বাংলা)- (Probhat, Avro, Inscript, Compact
-- Burmese Keyboard (မြန်မာ) xkb
-- English
-- Gujarati Keyboard (ગુજરાતી) - Phonetic, Inscript, Transliteration
-- Hindi Keyboard (हिन्दी)- Inscript, Transliteration
-- Kannada Keyboard (ಕನ್ನಡ) - Phonetic, Inscript, Transliteration (Baraha), Compact, Anysoft)
-- Kashmiri Keyboard (کٲشُر) - Inscript, Transliteration
-- Malayalam Keyboard (മലയാളം) - Phonetic, Inscript, Transliteration (Mozhi), Swanalekha, Mobile Inscript
-- Manipuri Keyboard / Methei Keyboard (মৈতৈলোন্) - Inscript
-- Maithili Keyboard (मैथिली)  - Inscript
-- Marathi Keyboard (मराठी) - Transliteration
-- Mon Keyboard (ဘာသာ မန်;)
-- Nepali Keyboard (नेपाली)  Phonetic, Traditional, Transliteration, Inscript
-- Oriya Keyboard (ଓଡ଼ିଆ) - Inscript, Transliteration, Lekhani
-- Punjabi Keyboard (ਪੰਜਾਬੀ) Phonetic, Inscript, Transliteration
-- Sanskrit Keyboard (संस्कृत) Transliteration
-- Santali Keyboard (Devanagari script)-(संताली) Inscript
-- Sinhala Keyboard / Sinhalese (සිංහල) Transliteration
-- Tamil Keyboard (தமிழ்) - Tamil-99, Inscript, Phonetic, Compact, Transliteration
-- Telugu Keyboard (తెలుగు) - Phonetic, Inscript, Transliteration, KaChaTaThaPa, Compact
-- Urdu Keyboard (اردو) - Navees, Transliteration
+<div align="center">
+<img src=".github/assets/screenshots/01-grammar-checker.jpg" alt="Grammar checker keyboard: a list of fixes, each with a reason" width="30%" />
+<img src=".github/assets/screenshots/02-check-as-you-type.jpg" alt="Check as you type: the GemType key counts mistakes and suggests a fix" width="30%" />
+<img src=".github/assets/screenshots/03-rewrite.jpg" alt="Rewrite in one tap: a casual note rewritten as a formal message" width="30%" />
+<br/>
+<img src=".github/assets/screenshots/04-banglish-english.jpg" alt="Banglish typed in English letters turned into clear English, with a Bangla read-back" width="30%" />
+<img src=".github/assets/screenshots/05-hinglish-hindi.jpg" alt="Hinglish typed in English letters converted to Hindi in Devanagari" width="30%" />
+<img src=".github/assets/screenshots/06-languages.jpg" alt="The Bangla keyboard layout, one of 96 layouts in 31 languages" width="30%" />
+</div>
 
-## License 
+## Features
 
-Apache License, Version 2.0
+### Grammar checker in every app
+- Tap the GemType key to check what you wrote. Each fix is marked grammar, spelling, punctuation or style, with a short reason.
+- Keep the fixes you want, skip the rest, then tap Replace. Undo is one tap away.
+- **Check as you type** (English): after you pause, the GemType key shows how many mistakes it found. Tap the suggestion to apply a fix.
 
-## How do I enable it ?
+### Rewrite in one tap
+- Improve, Shorten, Formal or Casual.
+- Ask for another version and compare versions before you replace your text.
 
-Indic keyboard has a wizard that will walk you through the process of setting it up so that you can use it comfortably.
+### Type the way you talk
+- Write Bangla, Hindi and other languages in English letters (Banglish, Hinglish) and convert them to the language's own script with one tap.
+- Translate what you wrote into clear English. A "Read as" line shows the meaning back in your language, so you know what you are sending.
 
-## I was using the older version, what happened to my settings ?
+### A full keyboard in 31 languages
+- 96 layouts in 21 scripts, gesture typing, next-word prediction in 20 languages, predictive transliteration (type "namaste", get नमस्ते), clipboard history, themes and emoji search.
 
-Since the code base was updated, you'd have to configure your preferred language again. 
-- Click on Settings -> Language & Input 
-- Tap on "Set up input methods".
-- Tap on the gear icon next to Indic Keyboard.
-- Tap on "Languages", uncheck "User system language" and choose your language and layout from the list. 
+### Fix text from other apps
+- Select text in many apps and choose GemType from the menu, or share text to GemType.
+- The **Fix clipboard** tile in Quick Settings corrects text you copied.
 
+### Private by design
+- Your typing stays on your phone. Text is sent only when you tap GemType, or while check as you type is on for English, and it goes directly to Google's Gemini API with your key.
+- Your API key is stored encrypted on your device and is left out of backups.
+- No ads, no analytics, no accounts, no GemType servers. [Privacy policy](https://gemtype.matily.org/privacy).
 
-## Why is there a warning about "collecting data"?
+## Install
 
-This warning message is a part of the Android operating system. It will appears whenever you try to enable a third party keyboard. We don't collect any data.
+1. Install GemType from [Google Play](https://play.google.com/store/apps/details?id=org.matily.gemtype), or download the APK from [Releases](https://github.com/MatilyLabs/GemType-Keyboard/releases/latest).
+2. Open GemType and follow the setup: turn it on as your keyboard, then switch to it.
+3. Get a free Gemini API key at [aistudio.google.com](https://aistudio.google.com/apikey) and paste it into GemType.
+4. Start typing in any app and tap the GemType key.
 
-## What is a keyboard layout ?
+Free Gemini keys have per-minute and daily limits. If fixes stop for a while, wait and try again, switch the model to Flash-Lite in GemType settings, or turn on billing for your key in Google AI Studio.
 
-Indic keyboard provides multiple "keyboard layouts". This means that you will have different  ways to type in your native language.
+## Languages
 
-**Transliteration** allows you to type out words using English characters, but will automatically transform the words to your native language. For example, if you type "namaste" in English while using Devanagari transliteration keyboard, it will transform it to नमस्ते correctly.
+Arabic, Assamese, Bangla (Bengali), Bhojpuri, Burmese, English, Gujarati, Hindi, Ho, Kannada, Kashmiri, Konkani, Maithili, Malayalam, Manipuri (Meitei), Marathi, Mon, Nepali, Odia, Punjabi, Rohingya, Sanskrit, Santali, Saurashtra, Sindhi, Sinhala, Sylheti, Tamil, Telugu, Tulu and Urdu.
 
-**Inscript layout** is the standardized keyboard that Government of India came up with to cater for the majority of the languages in India. We support the full specification, and if you are already familiar with Inscript on your Desktop, it will work on the phone too.
+## FAQ
 
-**Phonetic keyboard** is similar to Transliteration scheme - you can type what the words sound like using English characters and it will be automatically transformed into your language.
+**Is GemType free?**
+Yes. GemType is free and has no ads. It uses your own Gemini API key, and Google AI Studio offers a free tier.
 
-**Compact Keyboard** allows you to type without the shift key. You can long press on the letters to get more options.
+**What is a grammar checker keyboard?**
+A keyboard that checks and corrects your writing where you type it, so you never copy text into a separate app.
 
-Other layouts are specific to the languages - do try them out.
+**Which languages does the grammar check support?**
+Check as you type works in English. Tapping GemType fixes and rewrites text in many languages, including Bangla and Hindi.
 
-## HOWTO Build
-1. Install gradle, Android Support Repository, SDK and other usual android stuffs, 
-    1. Download the necessary tools from https://developer.android.com/studio/index.html and install them. Also set the necessary environment variables like `ANDROID_HOME`
-    1. You can optionally use the development environment provided as a Docker image which has all the necessary tools bundled in it
-        1. Pull the image using the command `docker pull registry.gitlab.com/smc/indic-keyboard:dev`
-        2. Run bash on it using `docker run -it registry.gitlab.com/balasankarc/indic-keyboard:dev bash`
-1. `git clone --recursive git@gitlab.com:indicproject/indic-keyboard.git`
-1. build jni lib `cd native/jni && ndk-build -e "APP_ABI=armeabi-v7a" -C ./`
-1. `cd java`
-1. `gradle assembleDebug` to build the package.
+**Can it change the tone of a message?**
+Yes. Make a message more formal for work, more casual for friends, shorter, or simply clearer.
 
-## Supporters
+**Does GemType see what I type?**
+GemType has no servers. Text leaves your phone only when you tap GemType or while check as you type is on, and it goes directly to Google's Gemini API.
 
-Government of India's Department of IT R & D project undertaken by ICFOSS funded the implementation of Mobile Compact Layout and Lollipop AOSP support. Another small aid from <a href=http://icfoss.in>ICFOSS</a> via Kerala Govt Sources enabled  addition of Swanalekha Layout (beta) and maintenance and updates on existing Malayalam Layouts.
+**Why did fixes stop working?**
+Free Gemini keys have per-minute and daily limits. Wait a minute, switch to Flash-Lite, or turn on billing for your key in Google AI Studio.
 
-Kannada Anysoft keyboard layout was funded via [Bounty Source](https://www.bountysource.com/issues/3406116-anysoft-like-kannada-inscript-keyboard-15) by Thejesh GN
+## GemType for Chrome, Edge and Firefox
 
-## Contributions and Credits
+The same grammar checker for your browser, Microsoft Word and the desktop: [**riponcm/GemType**](https://github.com/riponcm/GemType)
 
-(c) 2026, Jishnu Mohan.
+[![Chrome Web Store users](https://img.shields.io/chrome-web-store/users/linnnamnhkciekgpnegkcajcafmjlhgh?label=Chrome%20users&logo=googlechrome&logoColor=white&color=4285F4)](https://chromewebstore.google.com/detail/linnnamnhkciekgpnegkcajcafmjlhgh)
+[![Rating](https://img.shields.io/chrome-web-store/rating/linnnamnhkciekgpnegkcajcafmjlhgh?color=f59e0b)](https://chromewebstore.google.com/detail/linnnamnhkciekgpnegkcajcafmjlhgh)
+[![Stars](https://img.shields.io/github/stars/riponcm/GemType?style=flat&logo=github&color=f59e0b)](https://github.com/riponcm/GemType/stargazers)
 
-Brand identity and visual design by Hiran Venugopalan.
+[Chrome](https://chromewebstore.google.com/detail/linnnamnhkciekgpnegkcajcafmjlhgh) · [Edge](https://microsoftedge.microsoft.com/addons/detail/edbehlnmfcjhlbdlnmklicdoaopobbel) · [Firefox](https://addons.mozilla.org/firefox/addon/gemtype-ai-writing-assistant/)
 
-Thanks to [all the contributors](https://github.com/smc/Indic-Keyboard/graphs/contributors?all=1) who helped with layouts, tooling, documentation, and bug fixes.
+## Build from source
 
+Requirements: JDK 17, the Android SDK and NDK, and Go (for the transliteration engine).
+
+```bash
+git clone --recursive https://github.com/MatilyLabs/GemType-Keyboard.git
+cd GemType-Keyboard
+cp .env.sample .env    # set ANDROID_SDK, NDK_VERSION and JAVA_HOME
+make build             # debug APKs in java/build/outputs/apk/online/debug/
+make run               # install on a connected device and make GemType the active keyboard
+```
+
+Run `make` to list every command.
+
+## Support
+
+Questions, bugs or a wrong result: open an [issue](https://github.com/MatilyLabs/GemType-Keyboard/issues), use **Settings › About › Report a problem** in the app, or email support@matily.org.
+
+## Credits and license
+
+GemType is made by [Matily](https://matily.org) and developed by Ripon C. Malo.
+
+It is built on the open-source [Indic Keyboard](https://github.com/smc/Indic-Keyboard) by Jishnu Mohan and contributors, which is based on the Android Open Source Project keyboard. Predictive transliteration by [Varnam](https://github.com/varnamproject), layouts from jquery.ime, and word lists from Wikipedia and Olam/Alar. Thank you to everyone who built them.
+
+GemType is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE). Code from Indic Keyboard and the Android Open Source Project remains under the [Apache License 2.0](LICENSE-APACHE).

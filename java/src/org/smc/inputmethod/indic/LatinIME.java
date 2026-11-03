@@ -796,7 +796,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                 if (mSuggestionStripView != null) {
                     mSuggestionStripView.setCompanionKeyState(false, "", false);
                 }
-                Log.d("IndicKeyboard", "-------------transliteration enabled-----------");
+                Log.d("GemType", "-------------transliteration enabled-----------");
                 return true;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -807,7 +807,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         mInputLogic.setGestureXlitDictionary(getApplicationContext(), null,
                 false /* isLatinLayout */);
         updateCompanionVarnam(locale);
-        Log.d("IndicKeyboard", "-------------transliteration disabled----------------");
+        Log.d("GemType", "-------------transliteration disabled----------------");
         return false;
     }
 
@@ -2585,9 +2585,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         final TypedValue value = new TypedValue();
         if (kbContext != null
                 && kbContext.getTheme().resolveAttribute(R.attr.md3Primary, value, true)) {
-            return new ContextThemeWrapper(kbContext, R.style.Theme_IndicKeyboard_Picker);
+            return new ContextThemeWrapper(kbContext, R.style.Theme_GemType_Picker);
         }
-        return new ContextThemeWrapper(this, R.style.Theme_IndicKeyboard_Settings);
+        return new ContextThemeWrapper(this, R.style.Theme_GemType_Settings);
     }
 
     private void showEnabledSubtypePicker(final List<InputMethodSubtype> subtypes,

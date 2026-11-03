@@ -1,0 +1,51 @@
+GemType is a grammar checker keyboard for Android. It fixes grammar, spelling and punctuation in any app you type in, explains every fix, and rewrites your text in one tap. It runs on your own Gemini API key from Google AI Studio, with no GemType servers in between.
+
+FIX GRAMMAR AND SPELLING IN ANY APP
+- Tap the GemType key to check what you wrote. You get a list of fixes, each marked grammar, spelling, punctuation or style, with a short reason.
+- Keep the fixes you want, skip the rest, then tap Replace. Undo is one tap away.
+- In English, check as you type counts mistakes on the GemType key after you pause. Tap the suggestion to apply one fix.
+- Works in messages, email, notes, social apps and the browser: anywhere the keyboard opens.
+
+REWRITE IN ONE TAP
+- Improve, Shorten, Formal or Casual.
+- Ask for another version and compare versions before you replace your text.
+
+TYPE THE WAY YOU TALK
+- Write Bangla, Hindi and other languages in English letters (Banglish, Hinglish) and turn them into your language's own script with one tap.
+- Translate what you wrote into clear English. A "Read as" line shows the meaning back in your language, so you know what you are sending.
+
+A FULL KEYBOARD IN 31 LANGUAGES
+- 31 languages, 96 layouts and 21 scripts, including Bangla, Hindi, Tamil, Telugu, Malayalam, Kannada, Gujarati, Marathi, Punjabi, Odia, Urdu, Nepali, Sinhala, Arabic and English.
+- Gesture typing, next-word prediction in 20 languages, predictive transliteration (type "namaste", get नमस्ते), clipboard history, themes and emoji search.
+
+FIX TEXT FROM OTHER APPS
+- In many apps, select text and choose GemType from the menu, or share text to GemType.
+- Use the Fix clipboard tile in Quick Settings to correct text you copied.
+
+PRIVATE BY DESIGN
+- No ads, no analytics and no GemType servers.
+- Your typing stays on your phone. Text is sent only when you tap GemType, or while check as you type is on for English text, and it goes directly to Google's Gemini API with your key. You can turn check as you type off.
+- Your API key is stored encrypted on your device and is left out of backups.
+- Requests made with a free-tier key fall under Google's free-tier terms, which allow Google to use them to improve its products. Use a paid-tier key if you prefer otherwise.
+
+QUESTIONS AND ANSWERS
+
+Is GemType free?
+Yes. GemType is free and has no ads. It uses your own Gemini API key, and Google AI Studio offers a free tier.
+
+What is a grammar checker keyboard?
+A keyboard that checks and corrects your writing where you type it, so you never copy text into a separate app.
+
+Which languages does the grammar check support?
+Check as you type works in English. Tapping GemType fixes and rewrites text in many languages, including Bangla and Hindi.
+
+Can it change the tone of a message?
+Yes. Make a message more formal for work, more casual for friends, shorter, or simply clearer.
+
+Does GemType see what I type?
+GemType has no servers. Text leaves your phone only in the cases listed above, and goes directly to Google's Gemini API.
+
+How do I set it up?
+Install GemType, turn it on as your keyboard, paste a Gemini API key from aistudio.google.com, and start typing.
+
+Support: support@matily.org

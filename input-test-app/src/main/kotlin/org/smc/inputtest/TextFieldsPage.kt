@@ -23,7 +23,7 @@ import android.view.inputmethod.EditorInfo
 
 /**
  * An [android.widget.EditText] for every text-ish [android.text.InputType] variant (and a few
- * IME-action variants) Indic Keyboard cares about, grouped by kind. To add a field, drop a [field]
+ * IME-action variants) GemType cares about, grouped by kind. To add a field, drop a [field]
  * entry into the relevant group below. The number pads live on [NumberPadsPage].
  */
 object TextFieldsPage : Page {

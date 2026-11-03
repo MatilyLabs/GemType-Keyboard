@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="t d">
+  <title id="t">GemType: AI grammar checker keyboard for Android</title>
+  <desc id="d">A sentence with grammar mistakes is typed, GemType counts two mistakes, one tap fixes them.</desc>
+  <!-- One 10 s loop: type (0-3 s), flag mistakes (3.2 s), offer the fix (3.8 s), tap (4.8 s),
+       corrected text (5.4-9.4 s), reset. Pure CSS so it animates in a GitHub README <img>. -->
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .anim { animation-duration: 10s; animation-iteration-count: infinite; }
+    .typer { transform-origin: 0 0; animation-name: type; animation-timing-function: linear; }
+    .typed { animation-name: typed; }
+    .flag { opacity: 0; animation-name: flag; }
+    .offer { opacity: 0; animation-name: offer; }
+    .tap { opacity: 0; transform-origin: 1058px 212px; animation-name: tap; }
+    .fixed { opacity: 0; animation-name: fixed; }
+    @keyframes type { 0% { transform: scaleX(0); animation-timing-function: steps(34, end); } 30% { transform: scaleX(1); } 99.9% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+    @keyframes typed { 0%, 52% { opacity: 1; } 55%, 100% { opacity: 0; } }
+    @keyframes flag { 0%, 31% { opacity: 0; } 34%, 52% { opacity: 1; } 55%, 100% { opacity: 0; } }
+    @keyframes offer { 0%, 37% { opacity: 0; } 40%, 52% { opacity: 1; } 55%, 100% { opacity: 0; } }
+    @keyframes tap { 0%, 47% { opacity: 0; transform: scale(0.4); } 49% { opacity: 0.55; transform: scale(1); } 53%, 100% { opacity: 0; transform: scale(1.5); } }
+    @keyframes fixed { 0%, 53% { opacity: 0; } 56%, 93% { opacity: 1; } 97%, 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .anim { animation: none; }
+      .typed, .flag, .offer, .tap { opacity: 0; }
+      .fixed { opacity: 1; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#127f96"/>
+      <stop offset="0.5" stop-color="#2b6fc0"/>
+      <stop offset="1" stop-color="#3f55d1"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a99b0"/>
+      <stop offset="0.5" stop-color="#3282c8"/>
+      <stop offset="1" stop-color="#496adf"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0b1f4d" flood-opacity="0.35"/>
+    </filter>
+    <clipPath id="typeclip"><rect class="typer anim" x="0" y="-34" width="430" height="48"/></clipPath>
+  </defs>
+
+  <rect width="1280" height="420" rx="28" fill="url(#bg)"/>
+  <circle cx="1120" cy="40" r="300" fill="url(#glow)"/>
+  <circle cx="90" cy="420" r="240" fill="url(#glow)"/>
+
+  <!-- Brand -->
+  <g transform="translate(76,92)">
+    <rect width="96" height="96" rx="24" fill="url(#tile)" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+    <path d="M28 51 L43 66 L70 33" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="76" y="250" fill="#ffffff" font-size="68" font-weight="800" letter-spacing="-1.5">GemType</text>
+  <text x="78" y="298" fill="#ffffff" font-size="29" font-weight="600">AI grammar checker keyboard for Android</text>
+  <text x="78" y="340" fill="#ffffff" fill-opacity="0.82" font-size="20" font-weight="500">Fix grammar &#183; Rewrite tone &#183; 31 languages &#183; Your own Gemini key</text>
+
+  <!-- Phone message box + keyboard -->
+  <g filter="url(#shadow)">
+    <rect x="690" y="52" width="520" height="316" rx="30" fill="#f6f7fb"/>
+  </g>
+  <rect x="716" y="76" width="468" height="96" rx="18" fill="#ffffff" stroke="#dfe3ee"/>
+
+  <!-- What was typed: types in, then the two mistakes are flagged -->
+  <g class="typed anim">
+    <g transform="translate(740,134)" clip-path="url(#typeclip)">
+      <text x="0" y="0" fill="#1b1f2a" font-size="25" textLength="118" lengthAdjust="spacingAndGlyphs">i has went</text>
+      <text x="124" y="0" fill="#1b1f2a" font-size="25" textLength="288" lengthAdjust="spacingAndGlyphs">to the market yesterday</text>
+    </g>
+    <path class="flag anim" d="M740 146 q4 -5 8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0" fill="none" stroke="#e5484d" stroke-width="2.6" stroke-linecap="round"/>
+  </g>
+  <!-- After the fix -->
+  <g class="fixed anim">
+    <rect x="734" y="110" width="86" height="34" rx="8" fill="#d9f5e5"/>
+    <text x="740" y="134" fill="#1b1f2a" font-size="25" textLength="74" lengthAdjust="spacingAndGlyphs">I went</text>
+    <text x="826" y="134" fill="#1b1f2a" font-size="25" textLength="300" lengthAdjust="spacingAndGlyphs">to the market yesterday.</text>
+  </g>
+
+  <!-- Suggestion strip: the GemType key, its mistake count, the fix chip -->
+  <g transform="translate(716,190)">
+    <rect width="468" height="44" rx="12" fill="#eceff6"/>
+    <circle cx="26" cy="22" r="15" fill="url(#tile)"/>
+    <path d="M19 22 L24 27 L33 16" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <g class="flag anim">
+      <circle cx="39" cy="9" r="9" fill="#e5484d"/>
+      <text x="39" y="13.5" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">2</text>
+    </g>
+    <g class="offer anim">
+      <rect x="226" y="6" width="232" height="32" rx="16" fill="#3d5afe"/>
+      <text x="342" y="27.5" fill="#fff" font-size="16" font-weight="600" text-anchor="middle">Fix 2 mistakes</text>
+    </g>
+    <g class="fixed anim">
+      <rect x="244" y="6" width="214" height="32" rx="16" fill="#1f9d55"/>
+      <text x="351" y="27.5" fill="#fff" font-size="16" font-weight="600" text-anchor="middle">Fixed. Looks good</text>
+    </g>
+  </g>
+  <circle class="tap anim" cx="1058" cy="212" r="26" fill="#ffffff"/>
+
+  <!-- Keys -->
+  <g fill="#ffffff" stroke="#dfe3ee">
+    <rect x="716" y="250" width="40" height="30" rx="7"/><rect x="763" y="250" width="40" height="30" rx="7"/>
+    <rect x="810" y="250" width="40" height="30" rx="7"/><rect x="857" y="250" width="40" height="30" rx="7"/>
+    <rect x="904" y="250" width="40" height="30" rx="7"/><rect x="951" y="250" width="40" height="30" rx="7"/>
+    <rect x="998" y="250" width="40" height="30" rx="7"/><rect x="1045" y="250" width="40" height="30" rx="7"/>
+    <rect x="1092" y="250" width="40" height="30" rx="7"/><rect x="1139" y="250" width="45" height="30" rx="7"/>
+    <rect x="738" y="288" width="40" height="30" rx="7"/><rect x="785" y="288" width="40" height="30" rx="7"/>
+    <rect x="832" y="288" width="40" height="30" rx="7"/><rect x="879" y="288" width="40" height="30" rx="7"/>
+    <rect x="926" y="288" width="40" height="30" rx="7"/><rect x="973" y="288" width="40" height="30" rx="7"/>
+    <rect x="1020" y="288" width="40" height="30" rx="7"/><rect x="1067" y="288" width="40" height="30" rx="7"/>
+    <rect x="1114" y="288" width="48" height="30" rx="7"/>
+    <rect x="716" y="326" width="62" height="30" rx="7"/><rect x="786" y="326" width="320" height="30" rx="7"/>
+    <rect x="1114" y="326" width="70" height="30" rx="7"/>
+  </g>
+</svg>

@@ -27,7 +27,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class PreferenceManagerCompat {
-    private static final String TAG = "Indic Keyboard";
+    private static final String TAG = "GemType";
 
     private static final Set<String> sMigrated = Collections.synchronizedSet(new HashSet<>());
 

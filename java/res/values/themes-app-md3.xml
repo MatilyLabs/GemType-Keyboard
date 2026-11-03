@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.IndicKeyboard.Settings" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.GemType.Settings" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowLightStatusBar">?attr/isLightTheme</item>
         <item name="preferenceTheme">@style/M3PreferenceTheme</item>
     </style>
 
-    <style name="Theme.IndicKeyboard.Setup" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.GemType.Setup" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowLightStatusBar">?attr/isLightTheme</item>
     </style>
 
-    <style name="Theme.IndicKeyboard.Picker" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.GemType.Picker" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">?attr/md3Primary</item>
         <item name="colorOnPrimary">?attr/md3OnPrimary</item>
         <item name="colorSurface">?attr/md3Surface</item>

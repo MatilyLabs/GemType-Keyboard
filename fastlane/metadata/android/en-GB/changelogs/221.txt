@@ -1,2 +1,0 @@
-Fixes
-- secure direct boot fix

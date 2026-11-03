@@ -46,7 +46,7 @@ class CorrectionSettingsFragment : SubScreenFragment(),
 
         val pm = requireActivity().packageManager
 
-        // IndicKeyboard: dictionary download is not supported yet, so always drop the link.
+        // GemType: dictionary download is not supported yet, so always drop the link.
         removePreference(Settings.PREF_CONFIGURE_DICTIONARIES_KEY)
 
         val editPersonalDictionary =

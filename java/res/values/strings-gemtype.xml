@@ -169,7 +169,7 @@
     <!-- About screen -->
     <string name="about_made_by">Made by Matily\nDeveloped by Ripon C. Malo</string>
     <string name="about_privacy">Privacy policy</string>
-    <string name="about_privacy_url" translatable="false">https://github.com/MatilyLabs/GemType-Keyboard/blob/main/PRIVACY.md</string>
+    <string name="about_privacy_url" translatable="false">https://gemtype.matily.org/privacy</string>
     <string name="about_contact">Contact</string>
     <string name="about_contact_url" translatable="false">mailto:support@matily.org</string>
     <string name="about_contact_email" translatable="false">support@matily.org</string>

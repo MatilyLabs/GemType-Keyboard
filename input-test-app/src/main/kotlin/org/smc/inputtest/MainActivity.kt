@@ -14,7 +14,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 
 /**
- * Host for the [PAGES]. Each page is a screenful of fields to exercise Indic Keyboard against;
+ * Host for the [PAGES]. Each page is a screenful of fields to exercise GemType against;
  * [NavDrawer] switches between them.
  *
  * Automated tests should jump straight to a page instead of driving the drawer:
