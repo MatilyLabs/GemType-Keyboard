@@ -31,6 +31,13 @@
         android:persistent="false" />
 
     <Preference
+        android:key="about_limits"
+        android:title="@string/about_limits"
+        android:summary="@string/about_limits_summary"
+        android:icon="@drawable/ic_settings_about"
+        android:persistent="false" />
+
+    <Preference
         android:key="about_website"
         android:title="@string/about_website"
         android:icon="@drawable/ic_settings_languages"
@@ -50,6 +57,13 @@
         android:title="@string/about_contact"
         android:summary="@string/about_contact_email"
         android:icon="@drawable/gemtype_ic_settings_mail"
+        android:persistent="false" />
+
+    <Preference
+        android:key="about_report"
+        android:title="@string/about_report"
+        android:summary="@string/about_report_summary"
+        android:icon="@drawable/gemtype_ic_settings_report"
         android:persistent="false" />
 
     <org.smc.inputmethod.indic.settings.FlatPreference

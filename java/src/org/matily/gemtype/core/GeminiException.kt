@@ -21,7 +21,9 @@ class GeminiException(val kind: Kind, detail: String? = null) : Exception(detail
         val vpnHint = if (vpnActive) " If you're using a VPN, try turning it off." else ""
         return when (kind) {
             Kind.NO_API_KEY -> "Add your Gemini API key in GemType settings first."
-            Kind.RATE_LIMITED -> "Gemini rate limit reached. Wait a few seconds and try again."
+            Kind.RATE_LIMITED ->
+                "Your Gemini key reached its limit. Free keys have per-minute and daily limits: wait a minute and try again, " +
+                    "or turn on billing for your key in Google AI Studio."
             Kind.API_KEY_ERROR ->
                 if (message.orEmpty().contains("API key not valid", ignoreCase = true)) {
                     "That API key isn't valid. Copy it again from aistudio.google.com."
@@ -44,7 +46,7 @@ class GeminiException(val kind: Kind, detail: String? = null) : Exception(detail
     fun brief(vpnActive: Boolean): String =
         when (kind) {
             Kind.NO_API_KEY -> "Add your API key first."
-            Kind.RATE_LIMITED -> "Rate limit reached. Wait a few seconds."
+            Kind.RATE_LIMITED -> "Limit reached. Wait, or use a paid key."
             Kind.API_KEY_ERROR ->
                 if (message.orEmpty().contains("API key not valid", ignoreCase = true)) "That API key isn't valid."
                 else "Gemini rejected the request."

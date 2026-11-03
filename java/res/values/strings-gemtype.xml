@@ -173,6 +173,13 @@
     <string name="about_contact">Contact</string>
     <string name="about_contact_url" translatable="false">mailto:support@matily.org</string>
     <string name="about_contact_email" translatable="false">support@matily.org</string>
+    <string name="about_limits">Fixes not working?</string>
+    <string name="about_limits_summary">GemType runs on your own Gemini API key. Free keys have per-minute and daily limits, so fixes can stop for a while when you reach them. Wait and try again, switch the model to Flash-Lite in GemType settings, or turn on billing for your key in Google AI Studio. Light personal use on a paid key costs very little. Tap to see how billing works.</string>
+    <string name="about_limits_url" translatable="false">https://ai.google.dev/gemini-api/docs/billing</string>
+    <string name="about_report">Report a problem</string>
+    <string name="about_report_summary">Something not working, or a wrong or offensive result? Tell us by email.</string>
+    <string name="about_report_subject">GemType problem report</string>
+    <string name="about_report_body">What happened (paste the text and the result if you can):\n\n\n---\nGemType %1$s\nAndroid %2$s\n%3$s</string>
     <string name="about_open_source_licenses">Open-source licenses &amp; credits</string>
     <string name="about_footer">© 2026 Matily · GNU AGPL-3.0</string>
     <string name="about_credits">GemType is built on the open-source Indic Keyboard by Jishnu Mohan and contributors (Apache-2.0), which is based on the Android Open Source Project keyboard. Predictive transliteration by Varnam; layouts from jquery.ime; word lists from Wikipedia and Olam/Alar.</string>

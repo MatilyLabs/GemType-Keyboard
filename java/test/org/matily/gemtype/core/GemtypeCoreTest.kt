@@ -294,7 +294,7 @@ class GemtypeCoreTest {
         }
         assertEquals("That API key isn't valid.",
             GeminiException(GeminiException.Kind.API_KEY_ERROR, "API key not valid. Please pass a valid API key.").brief)
-        assertTrue(GeminiException(GeminiException.Kind.RATE_LIMITED).brief.contains("Rate limit"))
+        assertTrue(GeminiException(GeminiException.Kind.RATE_LIMITED).brief.contains("Limit reached"))
         assertTrue(GeminiException(GeminiException.Kind.NETWORK).brief.contains("Can't reach"))
     }
 
