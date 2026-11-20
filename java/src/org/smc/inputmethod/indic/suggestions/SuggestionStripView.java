@@ -491,6 +491,7 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
      */
     public void setConvertPillKeyState(final boolean visible, final String language, final boolean on) {
         mToolboxPillKey.setVisibility(visible ? VISIBLE : GONE);
+        findViewById(R.id.toolbox_pill_spacer).setVisibility(visible ? VISIBLE : GONE);
         if (!visible) {
             return;
         }

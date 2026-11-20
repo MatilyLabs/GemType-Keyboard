@@ -1818,6 +1818,19 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         mRichImm.setInputMethodAndSubtype(token, subtype);
     }
 
+    @Override
+    public void onSwipeLanguage(final boolean forward) {
+        final List<InputMethodSubtype> subtypes = mRichImm.getMyEnabledInputMethodSubtypeList(true);
+        if (subtypes.size() < 2) {
+            return;
+        }
+        mInputLogic.commitTyped(mSettings.getCurrent(), LastComposedWord.NOT_A_SEPARATOR);
+        final int at = subtypes.indexOf(mRichImm.getCurrentSubtype().getRawSubtype());
+        final int next = ((at < 0 ? 0 : at) + (forward ? 1 : subtypes.size() - 1)) % subtypes.size();
+        AudioAndHapticFeedbackManager.getInstance().performHapticFeedback(mKeyboardSwitcher.getVisibleKeyboardView());
+        switchLanguage(subtypes.get(next));
+    }
+
     public void switchToNextSubtype() {
         final IBinder token = getWindow().getWindow().getAttributes().token;
         // The framework's should-offer hint is unreliable (always true on some OEMs), so the

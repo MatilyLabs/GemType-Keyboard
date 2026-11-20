@@ -71,6 +71,7 @@ open class SettingsValues(
     @JvmField val mUseDoubleSpacePeriod: Boolean
     @JvmField val mBlockPotentiallyOffensive: Boolean
     @JvmField val mSpaceTrackpadEnabled: Boolean
+    @JvmField val mSpaceSwipeLanguage: Boolean
     @JvmField val mDeleteSwipeEnabled: Boolean
     @JvmField val mClipboardEnabled: Boolean
     @JvmField val mClipboardRecentChipEnabled: Boolean
@@ -241,6 +242,7 @@ open class SettingsValues(
             fetchAppWorkarounds(context)
         }
         mSpaceTrackpadEnabled = Settings.readSpaceTrackpadEnabled(prefs)
+        mSpaceSwipeLanguage = Settings.readSpaceSwipe(prefs) == Settings.SPACE_SWIPE_LANGUAGE
         mDeleteSwipeEnabled = Settings.readDeleteSwipeEnabled(prefs)
     }
 

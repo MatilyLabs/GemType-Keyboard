@@ -96,6 +96,20 @@
     <string name="gemtype_live_check_summary">Check your text for mistakes after you pause and show how many were found on the GemType key. Sends your text to Gemini while you type.</string>
     <string name="gemtype_show_convert_pill">Show conversion pill</string>
     <string name="gemtype_show_convert_pill_summary">Offer to turn text typed in English letters into your language</string>
+    <string name="space_swipe">Swipe on space bar</string>
+    <string name="space_swipe_cursor">Move the cursor</string>
+    <string name="space_swipe_language">Switch language (English ↔ বাংলা)</string>
+    <string name="space_swipe_off">Nothing</string>
+    <string-array name="space_swipe_entries">
+        <item>@string/space_swipe_cursor</item>
+        <item>@string/space_swipe_language</item>
+        <item>@string/space_swipe_off</item>
+    </string-array>
+    <string-array name="space_swipe_values" translatable="false">
+        <item>cursor</item>
+        <item>language</item>
+        <item>off</item>
+    </string-array>
     <string name="gemtype_suggest_emoji">Suggest emoji</string>
     <string name="gemtype_suggest_emoji_summary">Offer an emoji beside the words you type (haha → 😂). Tapping it adds the emoji after the word.</string>
     <string name="gemtype_learn">Learn from my typing</string>

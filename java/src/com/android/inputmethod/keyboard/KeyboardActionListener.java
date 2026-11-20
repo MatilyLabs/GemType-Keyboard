@@ -103,6 +103,8 @@ public interface KeyboardActionListener {
     public void onMovePointer(int steps);
     public void onMoveDeletePointer(int steps);
     public void onUpWithDeletePointerActive();
+    /** A swipe along the space bar ("Swipe on space bar: Switch language"): the next or previous language. */
+    public void onSwipeLanguage(boolean forward);
 
     public static final KeyboardActionListener EMPTY_LISTENER = new Adapter();
 
@@ -137,5 +139,7 @@ public interface KeyboardActionListener {
         public void onMoveDeletePointer(int steps) {}
         @Override
         public void onUpWithDeletePointerActive() {}
+        @Override
+        public void onSwipeLanguage(boolean forward) {}
     }
 }

@@ -380,8 +380,21 @@ class Settings private constructor() : SharedPreferences.OnSharedPreferenceChang
             prefs.floatOrDefault(PREF_KEYBOARD_HEIGHT_SCALE) { defaultValue }
 
         @JvmStatic
-        fun readSpaceTrackpadEnabled(prefs: SharedPreferences): Boolean =
-            prefs.getBoolean(PREF_SPACE_TRACKPAD, true)
+        fun readSpaceTrackpadEnabled(prefs: SharedPreferences): Boolean = readSpaceSwipe(prefs) == SPACE_SWIPE_CURSOR
+
+        const val PREF_SPACE_SWIPE = "pref_space_swipe"
+        const val SPACE_SWIPE_CURSOR = "cursor"
+        const val SPACE_SWIPE_LANGUAGE = "language"
+        const val SPACE_SWIPE_OFF = "off"
+
+        /**
+         * What a swipe along the space bar does: move the cursor (the default), switch the language, or
+         * nothing. Before this choice there was only the trackpad switch; turned off, it means nothing.
+         */
+        @JvmStatic
+        fun readSpaceSwipe(prefs: SharedPreferences): String =
+            prefs.getString(PREF_SPACE_SWIPE, null)
+                ?: if (prefs.getBoolean(PREF_SPACE_TRACKPAD, true)) SPACE_SWIPE_CURSOR else SPACE_SWIPE_OFF
 
         @JvmStatic
         fun readDeleteSwipeEnabled(prefs: SharedPreferences): Boolean =

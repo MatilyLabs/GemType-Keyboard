@@ -195,9 +195,11 @@
             android:padding="6dp"
             android:contentDescription="@string/spoken_description_emoji" />
         <View
+            android:id="@+id/toolbox_pill_spacer"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="0dp" />
+            android:layout_height="0dp"
+            android:visibility="gone" />
         <!-- GemType: switches the convert pill ("→ বাংলা") on and off. -->
         <TextView
             android:id="@+id/toolbox_pill_key"

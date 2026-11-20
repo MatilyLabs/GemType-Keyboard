@@ -901,6 +901,22 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     private void onMoveEventInternal(final int x, final int y, final long eventTime) {
         final Key oldKey = mCurrentKey;
 
+        if (oldKey != null && oldKey.getCode() == Constants.CODE_SPACE
+                && Settings.getInstance().getCurrent().mSpaceSwipeLanguage) {
+            // Language slider: one switch per touch, once the finger went a third of the space bar
+            // (or 40 dp) to either side. The space is not typed when the finger lifts.
+            if (!mCursorMoved) {
+                final int distance = x - mStartX;
+                final int threshold = Math.max(sPointerStep * 4, oldKey.getWidth() / 3);
+                if (Math.abs(distance) >= threshold) {
+                    sTimerProxy.cancelKeyTimersOf(this);
+                    mCursorMoved = true;
+                    sListener.onSwipeLanguage(distance > 0);
+                }
+            }
+            return;
+        }
+
         if (oldKey != null && oldKey.getCode() == Constants.CODE_SPACE && Settings.getInstance().getCurrent().mSpaceTrackpadEnabled) {
             //Pointer slider
             int steps = (x - mStartX) / sPointerStep;
