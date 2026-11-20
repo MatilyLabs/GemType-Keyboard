@@ -3098,8 +3098,9 @@ public final class InputLogic {
         }
         // Bangla and Hindi: GemType's own dictionaries (as on iOS), which know chat spellings.
         if (org.matily.gemtype.GemTypePhonetic.hasEngine(language)) {
-            org.matily.gemtype.GemTypePhonetic.suggest(mLatinIME, language, query,
-                    ROMANIZED_MAX_SUGGESTIONS + 1, words -> {
+            // The same words, in the same order, as the language's own phonetic keyboard.
+            org.matily.gemtype.GemTypePhonetic.candidates(mLatinIME, language, query,
+                    picks().pick(language, query), words -> {
                 if (generation != romanizedGeneration
                         || !mWordComposer.getTypedWord().equals(typedWord)) {
                     return;

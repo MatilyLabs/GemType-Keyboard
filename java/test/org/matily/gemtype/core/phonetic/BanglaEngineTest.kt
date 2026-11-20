@@ -289,6 +289,14 @@ class BanglaEngineTest {
         assertTrue(bn.convert("khabo").nfc() in list)
     }
 
+    @Test fun theSecondWordIsTheCapitalSpelling() {
+        fun firstTwo(roman: String) = PhoneticComposing.candidates(bn, roman, bn.suggestions(roman, 10), null).take(2).map { it.nfc() }
+        assertEquals(listOf("অগো", "ওগো").map { it.nfc() }, firstTwo("ogo"))
+        // A word that is right as typed keeps its place.
+        assertEquals("তুমি".nfc(), firstTwo("tumi").first())
+        assertEquals("আমি".nfc(), firstTwo("ami").first())
+    }
+
     @Test fun anXCanBeKkh() {
         // "x" for ক্ষ, as people write names and words (Avro alone gives এক্স).
         firsts("xirod" to "ক্ষীরোদ", "Xirod" to "ক্ষীরোদ", "xoma" to "ক্ষমা", "xoti" to "ক্ষতি", "xudro" to "ক্ষুদ্র")
