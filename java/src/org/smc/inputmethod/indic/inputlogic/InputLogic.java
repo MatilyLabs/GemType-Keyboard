@@ -752,8 +752,10 @@ public final class InputLogic {
         if (mIsAutoCorrectionIndicatorOn != newAutoCorrectionIndicator
                 && mWordComposer.isComposingWord()) {
             mIsAutoCorrectionIndicatorOn = newAutoCorrectionIndicator;
-            final CharSequence textWithUnderline =
-                    getTextWithUnderline(mWordComposer.getTypedWord());
+            // What the field shows for the word (on a phonetic or Varnam keyboard, the word in its
+            // own script, not the English letters): putting the letters back for a moment moved the
+            // cursor ("x" is one letter but four in এক্স), and the word was taken as left behind.
+            final CharSequence textWithUnderline = composingTextToRender();
             // TODO: when called from an updateSuggestionStrip() call that results from a posted
             // message, this is called outside any batch edit. Potentially, this may result in some
             // janky flickering of the screen, although the display speed makes it unlikely in
@@ -1004,7 +1006,11 @@ public final class InputLogic {
         // a letter or a word connector.
                 && settingsValues.isWordCodePoint(codePoint)
                 && (settingsValues.needsToLookupSuggestions()
-                        || (isVarnam && settingsValues.mInputAttributes.mShouldShowSuggestions)) &&
+                        || (isVarnam && settingsValues.mInputAttributes.mShouldShowSuggestions)
+                        // The phonetic keyboard composes in any ordinary text field, as on iOS:
+                        // without it a field that hides suggestions would get the bare rules.
+                        || (phoneticLanguage != null
+                                && settingsValues.mInputAttributes.mIsGeneralTextInput)) &&
         // In languages with spaces, we only start composing a word when we are not already
         // touching a word. In languages without spaces, the above conditions are sufficient.
         // NOTE: If the InputConnection is slow, we skip the text-after-cursor check since it
@@ -2473,6 +2479,8 @@ public final class InputLogic {
             final String best = org.matily.gemtype.GemTypePhonetic.bestNow(mLatinIME, phoneticLanguage,
                     typedWord, picks().pick(phoneticLanguage, typedWord));
             if (best != null && !best.isEmpty()) {
+                // Space commits the best word: not a choice of the user's, nothing to remember.
+                phoneticBuffer = null;
                 commitChosenWord(settingsValues, best, LastComposedWord.COMMIT_TYPE_DECIDED_WORD,
                         separatorString);
                 return;
@@ -2784,7 +2792,10 @@ public final class InputLogic {
                 im = new InputMethod(transliterationName, transliterationName, "", "", "1", 1, 3,
                         new ArrayList<InputMethod.InputPattern>());
                 mWordComposer.setTransliterationMethod(im);
-                mConnection.setTransliterationMethod(im);
+                // Letters typed where no word is composed (a field without suggestions, the cursor
+                // inside a word) still get the layout's own rules, as before. Punctuation never
+                // does (see sendKeyCodePoint).
+                mConnection.setTransliterationMethod(InputMethod.fromName(transliterationName, context));
                 isTransliteration = true;
                 return;
             }
@@ -2891,6 +2902,11 @@ public final class InputLogic {
     public void getVarnamSuggestions(String word, VarnamCallback cb) {
         final String language = phoneticLanguage;
         if (language != null) {
+            // Until the words for these letters are in, the strip shows older ones: a tap on one
+            // of them is not a choice for these letters.
+            if (!word.equals(phoneticBuffer)) {
+                phoneticBuffer = null;
+            }
             final String picked = picks().pick(language, word);
             org.matily.gemtype.GemTypePhonetic.candidates(mLatinIME, language, word, picked, words -> {
                 if (!language.equals(phoneticLanguage)) {
@@ -3077,6 +3093,9 @@ public final class InputLogic {
         }
         final String query = typedWord.toLowerCase(Locale.ROOT);
         final int generation = romanizedGeneration;
+        if (!query.equals(romanizedShownWord)) {
+            romanizedShownWord = null;
+        }
         // Bangla and Hindi: GemType's own dictionaries (as on iOS), which know chat spellings.
         if (org.matily.gemtype.GemTypePhonetic.hasEngine(language)) {
             org.matily.gemtype.GemTypePhonetic.suggest(mLatinIME, language, query,

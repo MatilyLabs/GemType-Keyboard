@@ -30,7 +30,8 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : LiveCheckController.Host 
     override fun englishCheck(): ((String) -> Boolean)? =
         if (ime.isEnglishDictionaryActive) ime::isMainDictionaryWord else null
 
-    override fun textBeforeCursor(n: Int): CharSequence = ime.getTextBeforeCursorFromCache(n)
+    // Null before the field is connected (the keyboard coming up over another app).
+    override fun textBeforeCursor(n: Int): CharSequence = ime.getTextBeforeCursorFromCache(n) ?: ""
 
     override fun cursor(): Int = ime.expectedCursor
 

@@ -153,6 +153,7 @@ object GemTypePhonetic {
 
         init {
             prefs.registerOnSharedPreferenceChangeListener(listener)
+            if (prefs.contains(OLD_PREF)) prefs.edit { remove(OLD_PREF) }
         }
 
         fun pick(language: String, roman: String): String? = map["$language|${roman.lowercase()}"]
@@ -183,7 +184,9 @@ object GemTypePhonetic {
         }
 
         companion object {
-            const val PREF = "gemtype_phonetic_picks"
+            /** v2: the first version could store a word under the letters of the word before it. */
+            const val PREF = "gemtype_phonetic_picks.v2"
+            private const val OLD_PREF = "gemtype_phonetic_picks"
             private const val CAPACITY = 500
         }
     }

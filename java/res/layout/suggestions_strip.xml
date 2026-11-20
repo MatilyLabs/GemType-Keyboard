@@ -283,7 +283,7 @@
         android:layout_centerVertical="true"
         android:src="@drawable/gemtype_mark"
         android:scaleType="fitCenter"
-        android:padding="9dp"
+        android:padding="4dp"
         android:visibility="gone"
         android:contentDescription="@string/gemtype_strip_button_description"
         style="?attr/suggestionWordStyle" />
