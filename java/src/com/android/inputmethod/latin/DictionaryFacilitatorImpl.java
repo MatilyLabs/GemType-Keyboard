@@ -657,6 +657,13 @@ public class DictionaryFacilitatorImpl implements DictionaryFacilitator {
         return isValidWord(word, ALL_DICTIONARY_TYPES);
     }
 
+    private static final String[] MAIN_DICTIONARY_ONLY = new String[] { Dictionary.TYPE_MAIN };
+
+    @Override
+    public boolean isInMainDictionary(final String word) {
+        return isValidWord(word, MAIN_DICTIONARY_ONLY);
+    }
+
     private boolean isValidWord(final String word, final String[] dictionariesToCheck) {
         if (TextUtils.isEmpty(word)) {
             return false;

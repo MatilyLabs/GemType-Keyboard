@@ -30,7 +30,6 @@ import com.android.inputmethod.latin.define.DecoderSpecificConstants;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import android.util.Log;
 
 import javax.annotation.Nonnull;
 
@@ -397,7 +396,6 @@ public final class WordComposer {
     }
 
     public void setBatchInputWord(final String word) {
-        Log.d("GemType", "WordComposer: setBatchInputWord");
         reset();
         mIsBatchMode = true;
         final int length = word.length();
@@ -418,7 +416,6 @@ public final class WordComposer {
      * @param coordinates the x, y coordinates of the key in the CoordinateUtils format
      */
     public void setComposingWord(final int[] codePoints, final int[] coordinates) {
-        Log.d("GemType", "WordComposer: setComposingWord");
         reset();
         final int length = codePoints.length;
         for (int i = 0; i < length; ++i) {
@@ -551,7 +548,6 @@ public final class WordComposer {
     // committedWord should contain suggestion spans if applicable.
     public LastComposedWord commitWord(final int type, final CharSequence committedWord,
             final String separatorString, final NgramContext ngramContext) {
-        Log.d("GemType", "=========CommitWord:" + committedWord + ", " + mTypedWordCache.toString());
         // Note: currently, we come here whenever we commit a word. If it's a MANUAL_PICK
         // or a DECIDED_WORD we may cancel the commit later; otherwise, we should deactivate
         // the last composed word to ensure this does not happen.

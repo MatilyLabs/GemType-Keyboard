@@ -59,6 +59,8 @@
 
     <!-- Conversion pills in the suggestion strip -->
     <string name="gemtype_pill_label">→ %1$s</string>
+    <!-- What a screen reader says for a convert pill ("Convert to বাংলা"). -->
+    <string name="gemtype_pill_spoken">Convert to %1$s</string>
     <string name="gemtype_pill_undo">Undo</string>
     <string name="gemtype_pill_text_changed">The text changed, so nothing was replaced.</string>
     <string name="gemtype_pill_empty">Type something first.</string>

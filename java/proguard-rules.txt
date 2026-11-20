@@ -25,3 +25,11 @@
 # and SettingsActivity instantiates them from that string, so the shrinker must
 # not drop them.
 -keep public class * extends androidx.fragment.app.Fragment
+
+# --- No debug logging in release ---------------------------------------------
+# A keyboard must never write what the user types to the system log. Debug and
+# verbose calls (and the strings built for them) are dropped from release builds.
+-assumenosideeffects class android.util.Log {
+    public static int d(...);
+    public static int v(...);
+}

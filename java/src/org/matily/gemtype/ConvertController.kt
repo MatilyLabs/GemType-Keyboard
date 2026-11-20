@@ -53,6 +53,12 @@ class ConvertController(
 
         /** Select [start]..[end] in the field (a cursor when equal). */
         fun select(start: Int, end: Int)
+
+        /** What the phonetic dictionaries say about romanized words, or null when none is ready. */
+        fun recognizer(): Romanized.Recognizer? = null
+
+        /** [language] is what the text looks like now (null: nothing): the suggestions follow it. */
+        fun onRomanizedChanged(language: String?) {}
     }
 
     /** Where the chip's correction comes from. */
@@ -75,6 +81,8 @@ class ConvertController(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + GemType.uncaught())
     private var job: Job? = null
     private var matches = emptyList<Romanized.Match>()
+    /** The last sentence that matched, carried into the next one ("ami kal ashbo. See you"). */
+    private var carried: Romanized.Carried? = null
     private var busy = -1
     private var undo: Undo? = null
     private var message: String? = null
@@ -117,6 +125,11 @@ class ConvertController(
 
     fun onSubtypeChanged() = schedule()
 
+    /** The phonetic dictionary learned about a word: look at the text again. */
+    fun onDictionaryAnswer() {
+        if (undo == null && message == null && busy < 0) schedule()
+    }
+
     /** Input finished: drop the request and hide the pills. */
     fun onFinishInput() = reset()
 
@@ -129,8 +142,16 @@ class ConvertController(
 
     private fun schedule() {
         handler.removeCallbacks(evaluate)
-        handler.postDelayed(evaluate, DEBOUNCE_MS)
+        // Right after a finished word (a space or punctuation) there is nothing to wait for: the pill
+        // shows with the third word, not after a pause.
+        val last = host.textBeforeCursor(1).lastOrNull()
+        val wordEnded = last != null && !last.isLetterOrDigit() && last != '\'' && last != '’'
+        handler.postDelayed(evaluate, if (wordEnded) WORD_END_MS else DEBOUNCE_MS)
     }
+
+    /** The language the text being typed looks like (the best pill), or null. */
+    val romanizedLanguage: String?
+        get() = if (undo == null && busy < 0) matches.firstOrNull()?.language else null
 
     private fun evaluate() {
         matches = detect()
@@ -152,8 +173,19 @@ class ConvertController(
             }
             return emptyList()
         }
-        val sentence = Romanized.currentSentence(host.textBeforeCursor(Romanized.TAIL_CHARS))
-        val found = Romanized.detect(sentence, languages, lists::get, host.englishCheck())
+        val before = host.textBeforeCursor(Romanized.TAIL_CHARS)
+        if (before.none { it.isLetter() }) {
+            carried = null // an empty field (sent, cleared): start over
+            return emptyList()
+        }
+        val sentence = Romanized.currentSentence(before)
+        val found = Romanized.detectRecent(before, carried, languages, lists::get, host.englishCheck(), host.recognizer())
+        val previous = carried
+        if (found.isEmpty()) {
+            carried = null
+        } else if (previous == null || previous.matches != found || sentence.startsWith(previous.sentence)) {
+            carried = Romanized.Carried(sentence, found)
+        }
         return Romanized.order(found, ConvertPrefs.lastLanguage(context))
     }
 
@@ -166,7 +198,8 @@ class ConvertController(
             else -> matches.map { context.getString(R.string.gemtype_pill_label, Romanized.nativeName(it.language)) } +
                 listOfNotNull(chip)
         }
-        bar.show(labels, busy, if (chip != null) labels.lastIndex else -1)
+        bar.show(labels, busy, if (chip != null) labels.lastIndex else -1, cover = undo != null)
+        host.onRomanizedChanged(romanizedLanguage)
     }
 
     private fun reset() {
@@ -178,6 +211,7 @@ class ConvertController(
         message = null
         chip = null
         matches = emptyList()
+        carried = null
         render()
     }
 
@@ -232,6 +266,7 @@ class ConvertController(
                 val result = GemType.client.refine(field.text, Action.NATIVE, config, Romanized.englishName(language)).text
                 if (field.replace(host, result)) {
                     host.clearSuggestions()
+                    carried = null // the text is in its own script now
                     busy = -1
                     offerUndo(field, result)
                 } else {
@@ -308,6 +343,7 @@ class ConvertController(
 
     private companion object {
         const val DEBOUNCE_MS = 400L
+        const val WORD_END_MS = 50L
         const val UNDO_MS = 10_000L
         const val MESSAGE_MS = 4_000L
     }

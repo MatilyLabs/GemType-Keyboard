@@ -195,7 +195,7 @@ class LanguageLayoutSettingsFragment : SubScreenFragment(),
         pref.isIconSpaceReserved = false
         pref.setTitle(R.string.companion_language_suggestions)
         pref.summary = getString(R.string.companion_language_suggestions_summary, target.mAutonym)
-        pref.isChecked = langCode == Settings.readCompanionLanguage(sharedPreferences)
+        pref.isChecked = langCode == org.matily.gemtype.CompanionLanguage.read(context, sharedPreferences)
         pref.setOnPreferenceChangeListener { _, newValue ->
             val checked = newValue as Boolean
             sharedPreferences.edit {

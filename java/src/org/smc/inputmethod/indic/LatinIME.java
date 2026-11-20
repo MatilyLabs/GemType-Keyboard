@@ -813,11 +813,16 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     private void updateCompanionVarnam(final Locale locale) {
         final SharedPreferences prefs = PreferenceManagerCompat.getDeviceSharedPreferences(this);
-        final String lang = Settings.readCompanionLanguage(prefs);
+        final String lang = org.matily.gemtype.CompanionLanguage.read(this, prefs);
         final boolean enabled = Settings.readCompanionEnabled(prefs);
         final boolean englishLayout = "en".equals(locale.getLanguage());
-        if (!lang.isEmpty() && enabled && englishLayout) {
-            mInputLogic.enableCompanionVarnam(lang, getApplicationContext());
+        // While the text looks like another language typed in English letters, the engine follows it
+        // (its words go in the strip, and the convert pill asks it about the words).
+        final String romanized = mInputLogic.getRomanizedLanguage();
+        final String engineLang = romanized != null
+                && org.smc.inputmethod.indic.varnam.VarnamIndicKeyboard.schemes.containsKey("varnam-" + romanized) ? romanized : lang;
+        if (!engineLang.isEmpty() && enabled && englishLayout) {
+            mInputLogic.enableCompanionVarnam(engineLang, getApplicationContext());
         } else {
             mInputLogic.disableCompanionVarnam(getApplicationContext());
         }
@@ -1047,6 +1052,10 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                 mGemTypeLive) : null;
         if (mGemTypeLive != null) {
             mGemTypeLive.setOnChange(mGemTypeConvert::refreshChip);
+        }
+        if (mGemTypeConvert != null) {
+            final ConvertController convert = mGemTypeConvert;
+            mInputLogic.mRomanizedLookup.setOnLearned(convert::onDictionaryAnswer);
         }
         mEmojiSearchBar = view.findViewById(R.id.emoji_search_bar);
         mEmojiSuggestionStrip = view.findViewById(R.id.emoji_suggestion_strip);
@@ -2480,14 +2489,39 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         return mGemTypeLive != null ? mGemTypeLive.cached(text) : null;
     }
 
-    /** True while the main dictionary is English, so {@link #isValidSpellingWord} can tell English words. */
+    /** True while the main dictionary is English, so {@link #isMainDictionaryWord} can tell English words. */
     public boolean isEnglishDictionaryActive() {
         return mDictionaryFacilitator.isActive()
                 && "en".equals(mDictionaryFacilitator.getLocale().getLanguage());
     }
 
-    public boolean isValidSpellingWord(final String word) {
-        return mDictionaryFacilitator.isValidSpellingWord(word);
+    /**
+     * True when {@code word} is in the bundled dictionary of the active language. Words learned
+     * from the user's typing do not count: Banglish typed on the English keyboard is learned too,
+     * and must not start to look like English.
+     */
+    /** What the phonetic engine says about romanized words (the convert pill's detection). */
+    public org.matily.gemtype.RomanizedLookup getRomanizedLookup() {
+        return mInputLogic.mRomanizedLookup;
+    }
+
+    /**
+     * The convert pill's detection: the text looks like {@code language} typed in English letters
+     * (null: it does not). The strip offers that language's words, and the phonetic engine follows.
+     */
+    public void onRomanizedLanguageChanged(@Nullable final String language) {
+        if (TextUtils.equals(language, mInputLogic.getRomanizedLanguage())) {
+            return;
+        }
+        mInputLogic.setRomanizedLanguage(language);
+        if (!mRichImm.getCurrentSubtype().getRawSubtype()
+                .containsExtraValueKey(TRANSLITERATION_METHOD)) {
+            updateCompanionVarnam(mRichImm.getCurrentSubtypeLocale());
+        }
+    }
+
+    public boolean isMainDictionaryWord(final String word) {
+        return mDictionaryFacilitator.isInMainDictionary(word);
     }
 
     /** Text before the cursor from the keyboard's own cache (no round trip to the app). */

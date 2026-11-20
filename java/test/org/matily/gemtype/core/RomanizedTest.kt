@@ -19,6 +19,7 @@ class RomanizedTest {
         "go", "home", "in", "time", "this", "that", "we", "can", "make", "it", "on", "friday", "sorry", "hello", "how",
         "what", "please", "thanks", "ok", "me", "my", "hi", "so", "not", "do", "have", "be", "for", "of", "at", "with",
         "reason", "now", "meeting", "later", "see", "dinner", "tonight", "want", "eat", "send", "message", "when", "get", "back",
+        "but", "am", "busy", "office", "e", "ache", "call", "boss", "very", "good", "project", "deadline", "your", "after",
     )
     private val english: (String) -> Boolean = { it in englishWords }
 
@@ -97,12 +98,71 @@ class RomanizedTest {
         assertEquals(listOf("ur", "bn"), Romanized.order(three, "ur").map { it.language })
     }
 
-    @Test fun wordsMustBeAtLeastTwoAndFortyPercent() {
-        // 2 of 5 words (40%) is enough; 2 of 6 (33%) is not; 1 of 1 is not.
+    @Test fun twoListWordsNeedAThirdOfTheTextNotEnglish() {
+        // 2 list words in 6 Latin words (a third) is enough; 2 in 7 is not.
         assertEquals(listOf("bn"), detect("ami kal go home now", "bn"))
-        assertEquals(emptyList<String>(), detect("ami kal go home now please", "bn"))
+        assertEquals(listOf("bn"), detect("ami kal go home now please", "bn"))
+        assertEquals(emptyList<String>(), detect("ami kal go home now please see", "bn"))
         assertEquals(emptyList<String>(), detect("ami", "bn"))
         assertEquals(emptyList<String>(), detect("ami go home now", "bn")) // only one list word
+    }
+
+    @Test fun englishMixedIntoRomanizedTextDoesNotHideIt() {
+        // People mix English into Banglish all the time; the pill must stay.
+        assertEquals(listOf("bn"), detect("ami office e jacchi meeting ache", "bn"))
+        assertEquals(listOf("bn"), detect("ami tomake bhalobashi but I am busy today", "bn"))
+        assertEquals(listOf("bn"), detect("ami kal ashbo but I have a meeting at the office tomorrow", "bn")) // 3 list words, 25%
+        assertEquals(listOf("bn"), detect("boss ke bolbo ami kal deadline er age project ta dibo", "bn"))
+        assertEquals("hi", detect("main kal office jaunga but meeting hai", "hi").first())
+        // One stray word in English text is still English.
+        assertEquals(emptyList<String>(), detect("I will call you kal after the meeting", "bn"))
+    }
+
+    @Test fun mixedBanglaAndHindiOffersTheLanguageThatIsReallyThere() {
+        assertEquals(listOf("bn"), detect("ami kal office jabo but meeting ache", "bn", "hi"))
+        assertEquals("hi", detect("main kal office jaunga but meeting hai", "bn", "hi").first())
+    }
+
+    @Test fun anEnglishSentenceAfterARomanizedOneKeepsTheOffer() {
+        val found = { text: String -> Romanized.detectRecent(text, null, listOf("bn"), lists::get, english).map { it.language } }
+        assertEquals(listOf("bn"), found("ami kal ashbo na. See you"))
+        assertEquals(listOf("bn"), found("ami kal ashbo na.\nPlease send the message"))
+        assertEquals(listOf("bn"), found("ami kal ashbo na. "))
+        // A long English text after it wins: the text is English now.
+        assertEquals(emptyList<String>(), found("ami kal ashbo. I will come tomorrow if you are free today, and see you later for dinner tonight"))
+        assertEquals(emptyList<String>(), found("I will come tomorrow. Hello, how are you"))
+        assertEquals(emptyList<String>(), found(""))
+    }
+
+    @Test fun theOfferCarriesIntoTheNextSentenceUntilItIsClearlyEnglish() {
+        val previous = Romanized.Carried("ami kal ashbo", listOf(Romanized.Match("bn", 3)))
+        val found = { text: String ->
+            Romanized.detectRecent(text, previous, listOf("bn", "hi"), lists::get, english).map { it.language }
+        }
+        assertEquals(listOf("bn"), found("See you"))
+        assertEquals(listOf("bn"), found("See you tomorrow"))
+        assertEquals(listOf("bn"), found("tomorrow e meeting")) // "e" is English here, but 3 words is not yet a sentence
+        assertEquals(emptyList<String>(), found("I will come tomorrow")) // 4 English words: the text moved on
+        assertEquals(emptyList<String>(), found("ami")) // the same sentence, words deleted: it decides alone
+        assertEquals(emptyList<String>(), found(""))
+        // Only languages still chosen.
+        assertEquals(emptyList<Romanized.Match>(), Romanized.detectRecent("See you", previous, listOf("hi"), lists::get, english))
+    }
+
+    @Test fun dictionaryWordsCountOnlyInTextThatIsMostlyNotEnglish() {
+        // A recognizer that knows a few Bangla words beyond the list.
+        val dictionary = mapOf("rasta" to Romanized.Standing.WORD, "jam" to Romanized.Standing.WORD,
+            "porikkha" to Romanized.Standing.WORD, "shuru" to Romanized.Standing.COMMON, "hobe" to Romanized.Standing.WORD)
+        val recognizer = Romanized.Recognizer { language, word -> if (language == "bn") dictionary[word] ?: Romanized.Standing.NONE else Romanized.Standing.NONE }
+        val find = { text: String -> Romanized.detect(text, listOf("bn"), lists::get, english, recognizer).map { it.language } }
+        // A common dictionary word is as good as a list word.
+        assertEquals(listOf("bn"), find("porikkha shuru hobe"))
+        // Three dictionary words alone, in text that is not English.
+        assertEquals(listOf("bn"), find("rasta jam porikkha"))
+        // Dictionary words borrowed into an English sentence do not flag it.
+        assertEquals(emptyList<String>(), find("the rasta was a jam today and I am busy now"))
+        // Without the recognizer the same words are unknown.
+        assertEquals(emptyList<String>(), Romanized.detect("rasta jam porikkha", listOf("bn"), lists::get, english).map { it.language })
     }
 
     @Test fun oneListWordIsEnoughWhenTheTextIsMostlyNotEnglish() {
@@ -114,9 +174,12 @@ class RomanizedTest {
         assertEquals(emptyList<String>(), detect("ami xyzzy qwrt", "bn", isEnglish = null)) // needs a dictionary
     }
 
-    @Test fun listWordsThatAreValidEnglishDoNotCount() {
-        val bothEnglish: (String) -> Boolean = { it in setOf("ami", "kal") }
-        assertEquals(emptyList<String>(), detect("ami kal ashbo", "bn", isEnglish = bothEnglish))
+    @Test fun listWordsThatAreValidEnglishCountOnlyNextToOnesThatAreNot() {
+        val bothEnglish: (String) -> Boolean = { it in setOf("ami", "kal", "go", "home") }
+        assertEquals(emptyList<String>(), detect("ami kal go home", "bn", isEnglish = bothEnglish))
+        assertEquals(emptyList<String>(), detect("ami kal", "bn", isEnglish = bothEnglish))
+        // "ashbo" is surely Bangla, so "ami" and "kal" count too.
+        assertEquals(listOf("bn"), detect("ami kal ashbo", "bn", isEnglish = bothEnglish))
         // Without a dictionary nothing is dropped.
         assertEquals(listOf("bn"), detect("ami kal ashbo", "bn", isEnglish = null))
     }

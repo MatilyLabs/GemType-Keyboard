@@ -152,6 +152,42 @@ public final class InputLogic {
     private int companionVarnamTaskId = COMPANION_TASK_ID_BASE;
     private static final int COMPANION_MAX_SUGGESTIONS = 1;
     private static final int COMPANION_MIN_WORD_LENGTH = 2;
+    // Lookups for the convert pill's detection run on the companion engine too, with their own ids.
+    private static final int LOOKUP_TASK_ID_BASE = 128;
+    private int lookupTaskId = LOOKUP_TASK_ID_BASE;
+
+    // GemType: the language the text being typed looks like ("Banglish" on the English keyboard),
+    // from the convert pill's detection; null when none. While set, the strip offers the typed word
+    // and that language's words in its own script instead of English look-alikes, and English
+    // autocorrect leaves the words alone.
+    @Nullable private String romanizedLanguage;
+    private static final int ROMANIZED_MAX_SUGGESTIONS = 2;
+    private int romanizedGeneration;
+
+    /** What the phonetic engine says about romanized words, for the convert pill's detection. */
+    public final org.matily.gemtype.RomanizedLookup mRomanizedLookup =
+            new org.matily.gemtype.RomanizedLookup(new org.matily.gemtype.RomanizedLookup.Engine() {
+                @Override
+                public String language() {
+                    return companionVarnamReady ? companionVarnamLang : null;
+                }
+
+                @Override
+                public boolean lookUp(final String word,
+                        final kotlin.jvm.functions.Function1<? super Integer, kotlin.Unit> done) {
+                    final Varnam engine = companionVarnam;
+                    if (engine == null || !companionVarnamReady) {
+                        return false;
+                    }
+                    if (++lookupTaskId >= LOOKUP_TASK_ID_BASE + 64) {
+                        lookupTaskId = LOOKUP_TASK_ID_BASE;
+                    }
+                    engine.transliterateAdvanced(lookupTaskId, word, (input, result) -> {
+                        done.invoke(bestExactWeight(result));
+                    });
+                    return true;
+                }
+            });
 
     /**
      * Create a new instance of the input logic.
@@ -1007,7 +1043,8 @@ public final class InputLogic {
         // isComposingWord() may have changed since we stored wasComposing
         if (mWordComposer.isComposingWord()) {
             // Varnam requires auto correction
-            if (settingsValues.mAutoCorrectionEnabledPerUserSettings || isVarnam) {
+            if ((settingsValues.mAutoCorrectionEnabledPerUserSettings && !isRomanizedWord())
+                    || isVarnam) {
                 final String separator = shouldAvoidSendingCode ? LastComposedWord.NOT_A_SEPARATOR
                         : StringUtils.newSingleCodePointString(codePoint);
                 commitCurrentAutoCorrection(settingsValues, separator, handler);
@@ -1539,6 +1576,12 @@ public final class InputLogic {
         if (isVarnam) {
             varnam.learn(suggestion);
         }
+        // A word in another script (a Bangla word picked from the English strip) is not an
+        // English word: learning it would make it count as English from then on.
+        if (!isVarnam && transliterationMethod == null && isLatinLocale(mDictionaryFacilitator.getLocale())
+                && hasNonLatinLetter(suggestion)) {
+            return;
+        }
         if (mConnection.hasSlowInputConnection()) {
             // Since we don't unlearn when the user backspaces on a slow InputConnection,
             // turn off learning to guard against adding typos that the user later deletes.
@@ -1659,7 +1702,13 @@ public final class InputLogic {
         // This line may cause the current thread to wait.
         final SuggestedWords suggestedWords = holder.get(null,
                 Constants.GET_SUGGESTED_WORDS_TIMEOUT);
-        if (suggestedWords != null) {
+        if (suggestedWords != null && isRomanizedWord()) {
+            // Banglish (or Hinglish...) on the English keyboard: no English look-alikes and no
+            // autocorrect; the typed word now, the language's own words when the engine answers.
+            mSuggestionStripViewAccessor.showSuggestionStrip(
+                    romanizedSuggestions(suggestedWords, new ArrayList<>()));
+            maybeShowRomanizedTransliterations();
+        } else if (suggestedWords != null) {
             mSuggestionStripViewAccessor.showSuggestionStrip(suggestedWords);
             maybeShowCompanionTransliterations();
         } else {
@@ -2798,6 +2847,7 @@ public final class InputLogic {
     }
 
     public void disableCompanionVarnam(final Context context) {
+        mRomanizedLookup.reset();
         if (companionVarnam != null) {
             companionVarnam.close(context);
             companionVarnam = null;
@@ -2831,7 +2881,12 @@ public final class InputLogic {
         final String query = mWordComposer.wasAutoCapitalized()
                 ? typedWord.substring(0, 1).toLowerCase(Locale.ROOT) + typedWord.substring(1)
                 : typedWord;
+        final String lookupLanguage = companionVarnamLang;
         getCompanionVarnamSuggestions(query, (input, result) -> {
+            if (result != null && lookupLanguage != null) {
+                mRomanizedLookup.record(lookupLanguage, query.toLowerCase(Locale.ROOT),
+                        bestExactWeight(result));
+            }
             if (result == null || !mWordComposer.getTypedWord().equals(typedWord)) {
                 return;
             }
@@ -2849,6 +2904,176 @@ public final class InputLogic {
                 mSuggestionStripViewAccessor.showSuggestionStrip(merged);
             }
         });
+    }
+
+    /**
+     * The convert pill's detection says the text looks like {@code language} typed in English
+     * letters (null: it does not). The strip follows from the next keystroke.
+     */
+    public void setRomanizedLanguage(@Nullable final String language) {
+        if (TextUtils.equals(language, romanizedLanguage)) {
+            return;
+        }
+        romanizedLanguage = language;
+        romanizedGeneration++;
+    }
+
+    @Nullable
+    public String getRomanizedLanguage() {
+        return romanizedLanguage;
+    }
+
+    /** The word being typed is romanized text on the English keyboard (see {@link #setRomanizedLanguage}). */
+    private boolean isRomanizedWord() {
+        if (romanizedLanguage == null || isVarnam || transliterationMethod != null
+                || !mWordComposer.isComposingWord()) {
+            return false;
+        }
+        return isAsciiLetters(mWordComposer.getTypedWord());
+    }
+
+    /**
+     * The strip for a romanized word: the typed word on the left, then {@code natives} (the words in
+     * their own script, best first) in the centre and on the right. Never autocorrects: a space keeps
+     * the typed word. The typed word is listed twice: the strip hides the first (index 0, "typed")
+     * and centres index 1, putting index 2 on its left and index 3 on its right.
+     */
+    private SuggestedWords romanizedSuggestions(final SuggestedWords base,
+            final ArrayList<SuggestedWordInfo> natives) {
+        final String typedWord = mWordComposer.getTypedWord();
+        final SuggestedWordInfo typed = new SuggestedWordInfo(typedWord, "" /* prevWordsContext */,
+                SuggestedWordInfo.MAX_SCORE, SuggestedWordInfo.KIND_TYPED,
+                Dictionary.DICTIONARY_USER_TYPED, SuggestedWordInfo.NOT_AN_INDEX,
+                SuggestedWordInfo.NOT_A_CONFIDENCE);
+        final SuggestedWordInfo keep = new SuggestedWordInfo(typedWord, "" /* prevWordsContext */,
+                SuggestedWordInfo.MAX_SCORE - 1, SuggestedWordInfo.KIND_COMPLETION,
+                Dictionary.DICTIONARY_USER_TYPED, SuggestedWordInfo.NOT_AN_INDEX,
+                SuggestedWordInfo.NOT_A_CONFIDENCE);
+        final ArrayList<SuggestedWordInfo> list = new ArrayList<>();
+        list.add(typed);
+        if (natives.isEmpty()) {
+            list.add(keep);
+        } else {
+            list.add(natives.get(0));
+            list.add(keep);
+            for (int i = 1; i < natives.size(); i++) {
+                list.add(natives.get(i));
+            }
+        }
+        return new SuggestedWords(list, base == null ? null : base.mRawSuggestions, typed,
+                false /* typedWordValid */, false /* willAutoCorrect */,
+                false /* isObsoleteSuggestions */, SuggestedWords.INPUT_STYLE_TYPING,
+                base == null ? SuggestedWords.NOT_A_SEQUENCE_NUMBER : base.mSequenceNumber);
+    }
+
+    /**
+     * Romanized mode: asks the phonetic engine for the typed word in the detected language's own
+     * script (Varnam when its pack is installed, else the language's transliteration rules) and
+     * shows up to {@link #ROMANIZED_MAX_SUGGESTIONS} of them beside the typed word.
+     */
+    private void maybeShowRomanizedTransliterations() {
+        final String language = romanizedLanguage;
+        final String typedWord = mWordComposer.getTypedWord();
+        if (language == null || typedWord.length() < COMPANION_MIN_WORD_LENGTH) {
+            return;
+        }
+        final String query = typedWord.toLowerCase(Locale.ROOT);
+        final int generation = romanizedGeneration;
+        if (companionVarnamReady && language.equals(companionVarnamLang)) {
+            getCompanionVarnamSuggestions(query, (input, result) -> {
+                if (result == null || generation != romanizedGeneration
+                        || !mWordComposer.getTypedWord().equals(typedWord)) {
+                    return;
+                }
+                mRomanizedLookup.record(language, query, bestExactWeight(result));
+                final ArrayList<SuggestedWordInfo> natives = romanizedCandidates(result);
+                if (!natives.isEmpty()) {
+                    mSuggestionStripViewAccessor.showSuggestionStrip(
+                            romanizedSuggestions(mSuggestedWords, natives));
+                }
+            });
+            return;
+        }
+        final InputMethod rules = ruleTransliteration(language);
+        if (rules == null) {
+            return;
+        }
+        final String word = rules.transliterateAll(query, null);
+        if (word == null || word.isEmpty() || containsLatinLetter(word)) {
+            return;
+        }
+        final ArrayList<SuggestedWordInfo> natives = new ArrayList<>();
+        natives.add(new SuggestedWordInfo(word, "" /* prevWordsContext */, 1,
+                SuggestedWordInfo.KIND_COMPLETION, Dictionary.DICTIONARY_RESUMED,
+                SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE));
+        mSuggestionStripViewAccessor.showSuggestionStrip(romanizedSuggestions(mSuggestedWords, natives));
+    }
+
+    /** Dictionary words first (exact, then patterns, then completions), then the engine's guesses. */
+    private static ArrayList<SuggestedWordInfo> romanizedCandidates(final TransliterationResult result) {
+        final ArrayList<SuggestedWordInfo> infos = new ArrayList<>();
+        final HashSet<String> seen = new HashSet<>();
+        final Suggestion[][] sources = {
+                result.ExactWords, result.PatternDictionarySuggestions, result.ExactMatches,
+                result.DictionarySuggestions, result.GreedyTokenized, result.TokenizerSuggestions,
+        };
+        for (final Suggestion[] source : sources) {
+            if (source == null) {
+                continue;
+            }
+            for (final Suggestion sug : source) {
+                if (sug.Word == null || sug.Word.isEmpty() || containsLatinLetter(sug.Word)
+                        || !seen.add(sug.Word)) {
+                    continue;
+                }
+                infos.add(new SuggestedWordInfo(sug.Word, "" /* prevWordsContext */, sug.Weight,
+                        SuggestedWordInfo.KIND_COMPLETION, Dictionary.DICTIONARY_RESUMED,
+                        SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE));
+                if (infos.size() >= ROMANIZED_MAX_SUGGESTIONS) {
+                    return infos;
+                }
+            }
+        }
+        return infos;
+    }
+
+    /** The weight of the best word the whole input spells exactly in the dictionary, or null. */
+    @Nullable
+    private static Integer bestExactWeight(@Nullable final TransliterationResult result) {
+        if (result == null) {
+            return null;
+        }
+        Integer best = null;
+        // ExactMatches are words that only start with the input, so they do not count.
+        for (final Suggestion[] source : new Suggestion[][] { result.ExactWords }) {
+            if (source == null) {
+                continue;
+            }
+            for (final Suggestion sug : source) {
+                if (sug.Word == null || sug.Word.isEmpty() || containsLatinLetter(sug.Word)) {
+                    continue;
+                }
+                if (best == null || sug.Weight > best) {
+                    best = sug.Weight;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static final String[] RULE_SCHEMES = { "avro", "transliteration", "singlish", "phonetic" };
+
+    /** The bundled transliteration rules that type {@code language} from English letters, or null. */
+    @Nullable
+    private InputMethod ruleTransliteration(final String language) {
+        for (final String scheme : RULE_SCHEMES) {
+            try {
+                return InputMethod.fromName(language + "-" + scheme, mLatinIME);
+            } catch (final IllegalArgumentException e) {
+                // Not this one; try the next.
+            }
+        }
+        return null;
     }
 
     private static boolean hasNoWorthwhileEnglishSuggestions(final SuggestedWords base) {
@@ -2878,6 +3103,24 @@ public final class InputLogic {
             }
         }
         return infos;
+    }
+
+    private static boolean isLatinLocale(@Nullable final Locale locale) {
+        return locale != null && !org.matily.gemtype.core.Romanized.INSTANCE.getNON_LATIN()
+                .contains(locale.getLanguage());
+    }
+
+    /** True when {@code word} has a letter outside the Latin script (Bangla, Devanagari, Arabic...). */
+    private static boolean hasNonLatinLetter(final String word) {
+        for (int i = 0; i < word.length(); ) {
+            final int cp = word.codePointAt(i);
+            if (Character.isLetter(cp)
+                    && Character.UnicodeScript.of(cp) != Character.UnicodeScript.LATIN) {
+                return true;
+            }
+            i += Character.charCount(cp);
+        }
+        return false;
     }
 
     private static boolean containsLatinLetter(final String word) {

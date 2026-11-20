@@ -168,6 +168,13 @@ public interface DictionaryFacilitator {
 
     boolean isValidSuggestionWord(final String word);
 
+    /**
+     * True when {@code word} is in the main (bundled) dictionary. Unlike
+     * {@link #isValidSpellingWord}, words the user taught the keyboard (typing history,
+     * personal dictionary, contacts) do not count.
+     */
+    boolean isInMainDictionary(final String word);
+
     boolean clearUserHistoryDictionary(final Context context);
 
     String dump(final Context context);

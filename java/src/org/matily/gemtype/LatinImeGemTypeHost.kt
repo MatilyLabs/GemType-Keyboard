@@ -25,9 +25,10 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : LiveCheckController.Host 
 
     override fun openSettings() = ime.launchGemTypeKeyScreen()
 
-    // The keyboard's dictionary knows English words only while an English keyboard is active.
+    // The keyboard's dictionary knows English words only while an English keyboard is active. Only the
+    // bundled dictionary counts: romanized words the user typed are learned too and are not English.
     override fun englishCheck(): ((String) -> Boolean)? =
-        if (ime.isEnglishDictionaryActive) ime::isValidSpellingWord else null
+        if (ime.isEnglishDictionaryActive) ime::isMainDictionaryWord else null
 
     override fun textBeforeCursor(n: Int): CharSequence = ime.getTextBeforeCursorFromCache(n)
 
@@ -57,4 +58,8 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : LiveCheckController.Host 
     override fun select(start: Int, end: Int) = ime.setSelectionFromGemType(start, end)
 
     override fun onReplaced(field: FieldText, result: CharSequence) = ime.offerGemTypeUndo(field, result)
+
+    override fun recognizer(): Romanized.Recognizer = ime.romanizedLookup
+
+    override fun onRomanizedChanged(language: String?) = ime.onRomanizedLanguageChanged(language)
 }

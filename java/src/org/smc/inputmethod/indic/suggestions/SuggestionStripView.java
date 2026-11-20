@@ -181,56 +181,61 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
             ViewCompat.setLayoutDirection(mToolboxStrip, layoutDirection);
         }
 
+        // The strip that should show; while a GemType pill covers the centre (converting, Undo, a
+        // message), none of the centre strips shows, and this one comes back after.
+        private View mShowing;
+        private boolean mCovered;
+
+        private void show(final View strip) {
+            mShowing = strip;
+            apply();
+        }
+
+        private void apply() {
+            final View visible = mCovered && mShowing != mToolboxStrip ? null : mShowing;
+            mSuggestionsStrip.setVisibility(visible == mSuggestionsStrip ? VISIBLE : INVISIBLE);
+            mImportantNoticeStrip.setVisibility(visible == mImportantNoticeStrip ? VISIBLE : INVISIBLE);
+            mClipboardChipStrip.setVisibility(visible == mClipboardChipStrip ? VISIBLE : INVISIBLE);
+            mInlineSuggestionsStrip.setVisibility(visible == mInlineSuggestionsStrip ? VISIBLE : INVISIBLE);
+            mToolboxStrip.setVisibility(visible == mToolboxStrip ? VISIBLE : INVISIBLE);
+        }
+
+        public void setCovered(final boolean covered) {
+            if (covered == mCovered) return;
+            mCovered = covered;
+            apply();
+        }
+
         public void showSuggestionsStrip() {
-            mSuggestionsStrip.setVisibility(VISIBLE);
-            mImportantNoticeStrip.setVisibility(INVISIBLE);
-            mClipboardChipStrip.setVisibility(INVISIBLE);
-            mInlineSuggestionsStrip.setVisibility(INVISIBLE);
-            mToolboxStrip.setVisibility(INVISIBLE);
+            show(mSuggestionsStrip);
         }
 
         public void showImportantNoticeStrip() {
-            mSuggestionsStrip.setVisibility(INVISIBLE);
-            mImportantNoticeStrip.setVisibility(VISIBLE);
-            mClipboardChipStrip.setVisibility(INVISIBLE);
-            mInlineSuggestionsStrip.setVisibility(INVISIBLE);
-            mToolboxStrip.setVisibility(INVISIBLE);
+            show(mImportantNoticeStrip);
         }
 
         public void showClipboardChipStrip() {
-            mSuggestionsStrip.setVisibility(INVISIBLE);
-            mImportantNoticeStrip.setVisibility(INVISIBLE);
-            mClipboardChipStrip.setVisibility(VISIBLE);
-            mInlineSuggestionsStrip.setVisibility(INVISIBLE);
-            mToolboxStrip.setVisibility(INVISIBLE);
+            show(mClipboardChipStrip);
         }
 
         public void showInlineSuggestionsStrip() {
-            mSuggestionsStrip.setVisibility(INVISIBLE);
-            mImportantNoticeStrip.setVisibility(INVISIBLE);
-            mClipboardChipStrip.setVisibility(INVISIBLE);
-            mInlineSuggestionsStrip.setVisibility(VISIBLE);
-            mToolboxStrip.setVisibility(INVISIBLE);
+            show(mInlineSuggestionsStrip);
         }
 
         public void showToolboxStrip() {
-            mSuggestionsStrip.setVisibility(INVISIBLE);
-            mImportantNoticeStrip.setVisibility(INVISIBLE);
-            mClipboardChipStrip.setVisibility(INVISIBLE);
-            mInlineSuggestionsStrip.setVisibility(INVISIBLE);
-            mToolboxStrip.setVisibility(VISIBLE);
+            show(mToolboxStrip);
         }
 
         public boolean isShowingImportantNoticeStrip() {
-            return mImportantNoticeStrip.getVisibility() == VISIBLE;
+            return mShowing == mImportantNoticeStrip;
         }
 
         public boolean isShowingClipboardChipStrip() {
-            return mClipboardChipStrip.getVisibility() == VISIBLE;
+            return mShowing == mClipboardChipStrip;
         }
 
         public boolean isShowingInlineSuggestionsStrip() {
-            return mInlineSuggestionsStrip.getVisibility() == VISIBLE;
+            return mShowing == mInlineSuggestionsStrip;
         }
     }
 
@@ -290,7 +295,7 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         mGemTypeBadge = findViewById(R.id.suggestions_strip_gemtype_badge);
         setStartMargin(mGemTypeBadge, mLeftInset
                 - (int) (20 * getResources().getDisplayMetrics().density));
-        mConvertPills.setOnWidthChanged(this::updateConvertPillsInset);
+        mConvertPills.setOnLayoutChanged(this::updateConvertPillsInset);
         mClipboardChipLeadingSpacer = findViewById(R.id.clipboard_chip_leading_spacer);
         mToolboxSettingsKey = findViewById(R.id.toolbox_settings_key);
         mToolboxSettingsKey.setOnClickListener(this);
@@ -1056,6 +1061,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         if (oldw <= 0 && w > 0) {
             maybeShowImportantNoticeTitle();
         }
+        if (w != oldw) {
+            // The pills fit themselves to the new width (see updateConvertPillsInset).
+            post(this::updateConvertPillsInset);
+        }
     }
 
     // The right sticky slot holds at most one of the voice / more-suggestions keys. Its space is
@@ -1126,7 +1135,6 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
                 R.dimen.config_suggestions_strip_edge_key_width);
         final int leftInset = visible ? 2 * slot : slot;
         mLeftInset = leftInset;
-        setStartMargin(mConvertPills, leftInset);
         setStartMargin(mToolboxStrip, leftInset);
         setStartMargin(mMenuKey, visible ? slot : 0);
         mConvertPills.setSuppressed(!visible);
@@ -1134,21 +1142,49 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         updateConvertPillsInset();
     }
 
-    // The pills sit between the menu key and the suggestions: everything that fills the strip's
-    // centre starts after them, and the words are laid out again once the new width is known
-    // (they are ellipsized to the old one).
+    // An offered pill sits at the trailing end, before the right sticky slot, and the words make room
+    // for it; they are laid out again once the new width is known (they are ellipsized to the old
+    // one). A pill that is converting, offering Undo or showing a message sits at the start and
+    // covers the words instead.
     private void updateConvertPillsInset() {
-        final int inset = mLeftInset + mConvertPills.getOccupiedWidth();
+        final int slot = getResources().getDimensionPixelSize(
+                R.dimen.config_suggestions_strip_edge_key_width);
+        mConvertPills.setAvailableWidth(Math.max(getWidth() - mLeftInset - slot, 0));
+        final boolean covering = mConvertPills.getCovering();
+        final RelativeLayout.LayoutParams pills =
+                (RelativeLayout.LayoutParams) mConvertPills.getLayoutParams();
+        if (covering) {
+            pills.removeRule(RelativeLayout.ALIGN_PARENT_END);
+            pills.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+            pills.addRule(RelativeLayout.ALIGN_PARENT_START);
+            pills.setMarginStart(mLeftInset);
+            pills.setMarginEnd(0);
+        } else {
+            pills.removeRule(RelativeLayout.ALIGN_PARENT_START);
+            pills.addRule(RelativeLayout.ALIGN_PARENT_END);
+            pills.setMarginStart(0);
+            pills.setMarginEnd(slot);
+        }
+        mConvertPills.setLayoutParams(pills);
+        mStripVisibilityGroup.setCovered(covering);
+
+        final int start = mLeftInset;
+        final int end = slot + mConvertPills.getOccupiedWidth();
         final ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams)
                 mSuggestionsStrip.getLayoutParams();
-        if (params.getMarginStart() == inset) {
+        if (params.getMarginStart() == start && params.getMarginEnd() == end) {
             return;
         }
-        setStartMargin(mSuggestionsStrip, inset);
-        setStartMargin(mImportantNoticeStrip, inset);
-        setStartMargin(mInlineSuggestionsStrip, inset);
+        for (final View strip : new View[] {
+                mSuggestionsStrip, mImportantNoticeStrip, mInlineSuggestionsStrip }) {
+            final ViewGroup.MarginLayoutParams margins =
+                    (ViewGroup.MarginLayoutParams) strip.getLayoutParams();
+            margins.setMarginStart(start);
+            margins.setMarginEnd(end);
+            strip.setLayoutParams(margins);
+        }
         final ViewGroup.LayoutParams spacer = mClipboardChipLeadingSpacer.getLayoutParams();
-        spacer.width = inset;
+        spacer.width = start;
         mClipboardChipLeadingSpacer.setLayoutParams(spacer);
         mSuggestionsStrip.addOnLayoutChangeListener(new OnLayoutChangeListener() {
             @Override

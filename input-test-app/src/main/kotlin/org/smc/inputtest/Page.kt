@@ -30,4 +30,4 @@ interface Page {
     fun createView(host: Activity): View
 }
 
-val PAGES: List<Page> = listOf(TextFieldsPage, NumberPadsPage, RichContentPage, ComposeFieldsPage)
+val PAGES: List<Page> = listOf(TextFieldsPage, NumberPadsPage, RichContentPage, ComposeFieldsPage, WebEditorPage)
