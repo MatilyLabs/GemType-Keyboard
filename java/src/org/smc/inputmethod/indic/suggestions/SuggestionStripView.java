@@ -288,6 +288,12 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         mMenuKey.setOnClickListener(this);
         mGemTypeKey = findViewById(R.id.suggestions_strip_gemtype_key);
         mGemTypeKey.setOnClickListener(this);
+        // The strip shows only the GemType key on the left (as on iOS); holding it opens the tools
+        // (settings, clipboard, emoji...) that the menu key used to open.
+        mGemTypeKey.setOnLongClickListener(v -> {
+            toggleToolbox();
+            return true;
+        });
         mConvertPills = findViewById(R.id.suggestions_strip_gemtype_pills);
         mLeftInset = getResources().getDimensionPixelSize(
                 R.dimen.config_suggestions_strip_edge_key_width);
@@ -414,27 +420,11 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
     // This method checks if we should show the important notice (checks on permanent storage if
     // it has been shown once already or not, and if in the setup wizard). If applicable, it shows
     // the notice. In all cases, it returns true if it was shown, false otherwise.
+    // GemType: the strip never shows AOSP's "Suggest contact names? Touch for info." notice; it took
+    // the words' place on the first keyboards and led to a contacts permission prompt. Contact names
+    // can still be turned on in the keyboard's settings.
     public boolean maybeShowImportantNoticeTitle() {
-        final SettingsValues currentSettingsValues = Settings.getInstance().getCurrent();
-        if (!ImportantNoticeUtils.shouldShowImportantNotice(getContext(), currentSettingsValues)) {
-            return false;
-        }
-        if (getWidth() <= 0) {
-            return false;
-        }
-        final String importantNoticeTitle = ImportantNoticeUtils.getSuggestContactsNoticeTitle(
-                getContext());
-        if (TextUtils.isEmpty(importantNoticeTitle)) {
-            return false;
-        }
-        if (isShowingMoreSuggestionPanel()) {
-            dismissMoreSuggestionsPanel();
-        }
-        closeToolbox(false /* animate */);
-        mLayoutHelper.layoutImportantNotice(mImportantNoticeStrip, importantNoticeTitle);
-        mStripVisibilityGroup.showImportantNoticeStrip();
-        mImportantNoticeStrip.setOnClickListener(this);
-        return true;
+        return false;
     }
 
     public void showClipboardChip(final ClipboardHistoryEntry entry) {
@@ -1119,10 +1109,9 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         animateRightSlotKey(mMoreSuggestionsKey, rightKey == mMoreSuggestionsKey);
     }
 
-    // GemType's key takes the far-left slot and pushes the menu key one slot right, so everything
-    // the left slot used to reserve space for moves with it. Hidden in password fields, in
-    // builds without GemType (offline flavor), and while the toolbox is open: the toolbox row
-    // needs all the width it had before GemType took a slot.
+    // GemType's key takes the far-left slot in place of the menu key (holding it opens the
+    // toolbox). Hidden in password fields, in builds without GemType (offline flavor), and while
+    // the toolbox is open; the menu key shows there instead.
     private void updateGemTypeKey(final SettingsValues settingsValues) {
         final boolean visible = GemType.isEnabled() && settingsValues != null
                 && !settingsValues.mInputAttributes.mIsPasswordField && !mToolboxOpen;
@@ -1131,12 +1120,15 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         }
         mGemTypeKeyVisible = visible;
         mGemTypeKey.setVisibility(visible ? VISIBLE : GONE);
+        // One key on the left: the GemType key, or the menu key where GemType is not shown
+        // (password fields, the offline build) and while the tools are open (it closes them).
+        mMenuKey.setVisibility(visible ? GONE : VISIBLE);
         final int slot = getResources().getDimensionPixelSize(
                 R.dimen.config_suggestions_strip_edge_key_width);
-        final int leftInset = visible ? 2 * slot : slot;
+        final int leftInset = slot;
         mLeftInset = leftInset;
         setStartMargin(mToolboxStrip, leftInset);
-        setStartMargin(mMenuKey, visible ? slot : 0);
+        setStartMargin(mMenuKey, 0);
         mConvertPills.setSuppressed(!visible);
         mGemTypeBadge.setSuppressed(!visible);
         updateConvertPillsInset();
