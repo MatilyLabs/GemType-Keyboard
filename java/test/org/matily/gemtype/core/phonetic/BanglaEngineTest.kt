@@ -289,6 +289,14 @@ class BanglaEngineTest {
         assertTrue(bn.convert("khabo").nfc() in list)
     }
 
+    @Test fun anXCanBeKkh() {
+        // "x" for ক্ষ, as people write names and words (Avro alone gives এক্স).
+        firsts("xirod" to "ক্ষীরোদ", "Xirod" to "ক্ষীরোদ", "xoma" to "ক্ষমা", "xoti" to "ক্ষতি", "xudro" to "ক্ষুদ্র")
+        assertEquals("ক্ষীরোদ".nfc(), PhoneticComposing.best(bn, "Xirod", null).nfc())
+        // English words keep their x.
+        firsts("taxi" to "ট্যাক্সি", "box" to "বক্স", "fax" to "ফ্যাক্স")
+    }
+
     @Test fun closestWordScoresCommonWords() {
         val ami = bn.closestWord("ami")
         assertNotNull(ami)

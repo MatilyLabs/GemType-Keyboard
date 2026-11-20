@@ -49,7 +49,19 @@ class BanglaEngine(private val data: PhoneticData, private val useFrequencies: B
 
     private class Spelling(val distance: Int, val word: String)
 
+    /**
+     * The words for [word], ranked; when none is close and [word] has an "x" that may be ক্ষ ("xirod" ->
+     * ক্ষীরোদ), the words for that reading first. English words keep their x: "taxi" has a close word.
+     */
     private fun rankedCandidates(word: String): List<Ranked> {
+        val ranked = rankedFor(word)
+        val x = xAsKkh(word) ?: return ranked
+        if (ranked.any { !it.far }) return ranked
+        val seen = HashSet<Int>()
+        return (rankedFor(x) + ranked).filter { seen.add(it.index) }
+    }
+
+    private fun rankedFor(word: String): List<Ranked> {
         val dictionary = dictionary ?: return emptyList()
         val found = dictionary.candidateEntries(word)
         // Many people write the plain vowel as "a" (shatabdi for শতাব্দী, rahim for রহিম), which Avro reads as া.
@@ -235,6 +247,27 @@ class BanglaEngine(private val data: PhoneticData, private val useFrequencies: B
                 }
             }
             return out.take(8)
+        }
+
+        /**
+         * [word] with an "x" before a vowel or "m" read as ক্ষ ("kkh"), as many people write it: "xirod" ->
+         * ক্ষীরোদ, "xoma" -> ক্ষমা, "laxmi" -> লক্ষ্মী. Avro reads x as ক্স, which English words keep ("taxi",
+         * "box"). Null when there is no such x.
+         */
+        fun xAsKkh(word: String): String? {
+            val out = StringBuilder()
+            var changed = false
+            for (i in word.indices) {
+                val c = word[i]
+                val next = word.getOrNull(i + 1)?.lowercaseChar()
+                if ((c == 'x' || c == 'X') && next != null && (next in "aeiou" || next == 'm')) {
+                    out.append("kkh")
+                    changed = true
+                } else {
+                    out.append(c)
+                }
+            }
+            return if (changed) out.toString() else null
         }
 
         /** [word] with the "s" of a verb ending read as "ch" (-se, -si, -silo, -silam ...), or null. */
