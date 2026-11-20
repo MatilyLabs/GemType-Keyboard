@@ -164,7 +164,7 @@
             android:layout_height="0dp" />
         <ImageButton
             android:id="@+id/toolbox_settings_key"
-            android:layout_width="64dp"
+            android:layout_width="52dp"
             android:layout_height="32dp"
             android:src="@drawable/ic_kb_settings"
             android:scaleType="fitCenter"
@@ -176,7 +176,7 @@
             android:layout_height="0dp" />
         <ImageButton
             android:id="@+id/toolbox_clipboard_key"
-            android:layout_width="64dp"
+            android:layout_width="52dp"
             android:layout_height="32dp"
             android:src="@drawable/ic_kb_clipboard"
             android:scaleType="fitCenter"
@@ -188,12 +188,26 @@
             android:layout_height="0dp" />
         <ImageButton
             android:id="@+id/toolbox_emoji_key"
-            android:layout_width="64dp"
+            android:layout_width="52dp"
             android:layout_height="32dp"
             android:src="@drawable/ic_kb_emoji"
             android:scaleType="fitCenter"
             android:padding="6dp"
             android:contentDescription="@string/spoken_description_emoji" />
+        <View
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="0dp" />
+        <!-- GemType: switches the convert pill ("→ বাংলা") on and off. -->
+        <TextView
+            android:id="@+id/toolbox_pill_key"
+            android:layout_width="52dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:textSize="17sp"
+            android:textColor="?attr/md3OnSurfaceVariant"
+            android:singleLine="true"
+            android:visibility="gone" />
         <View
             android:id="@+id/toolbox_companion_spacer"
             android:layout_width="0dp"
@@ -202,7 +216,7 @@
             android:visibility="gone" />
         <ImageButton
             android:id="@+id/toolbox_companion_key"
-            android:layout_width="64dp"
+            android:layout_width="52dp"
             android:layout_height="32dp"
             android:scaleType="fitCenter"
             android:padding="6dp"
@@ -216,7 +230,7 @@
             android:visibility="gone" />
         <ImageButton
             android:id="@+id/toolbox_hw_toggle_key"
-            android:layout_width="64dp"
+            android:layout_width="52dp"
             android:layout_height="32dp"
             android:src="@drawable/ic_kb_hw_expand"
             android:scaleType="fitCenter"

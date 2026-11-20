@@ -256,9 +256,13 @@ public final class Suggest {
             }
         }
 
+        // GemType: the word as typed always shows in the strip (on the left), as on iOS, so "amr" or
+        // "hum" can be kept exactly; the best suggestion takes the centre.
         final SuggestedWordInfo typedWordInfo = new SuggestedWordInfo(typedWordString,
                 "" /* prevWordsContext */, SuggestedWordInfo.MAX_SCORE,
-                SuggestedWordInfo.KIND_TYPED,
+                SuggestedWordInfo.KIND_TYPED
+                        | (inputStyleIfNotPrediction == SuggestedWords.INPUT_STYLE_TYPING
+                                ? SuggestedWordInfo.KIND_FLAG_ALWAYS_SHOW_IN_STRIP : 0),
                 null == sourceDictionaryOfRemovedWord ? Dictionary.DICTIONARY_USER_TYPED
                         : sourceDictionaryOfRemovedWord,
                 SuggestedWordInfo.NOT_AN_INDEX /* indexOfTouchPointOfSecondWord */,

@@ -77,5 +77,24 @@
             android:title="@string/gemtype_convert_to"
             android:dependency="gemtype_show_convert_pill"
             android:persistent="false" />
+        <CheckBoxPreference
+            android:key="gemtype_suggest_emoji"
+            android:title="@string/gemtype_suggest_emoji"
+            android:summary="@string/gemtype_suggest_emoji_summary"
+            android:defaultValue="true"
+            android:persistent="true" />
+        <!-- The keyboard's own learning switch (also under Text correction). -->
+        <CheckBoxPreference
+            android:key="pref_key_learn_from_typing"
+            android:title="@string/gemtype_learn"
+            android:summary="@string/gemtype_learn_summary"
+            android:defaultValue="true"
+            android:persistent="true" />
+        <Preference
+            android:key="gemtype_learned_words"
+            android:title="@string/gemtype_learn_clear"
+            android:summary="@string/gemtype_learn_clear_summary"
+            android:fragment="org.smc.inputmethod.indic.settings.LearnedWordsFragment"
+            android:persistent="false" />
     </PreferenceCategory>
 </PreferenceScreen>

@@ -62,4 +62,8 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : LiveCheckController.Host 
     override fun recognizer(): Romanized.Recognizer = ime.romanizedLookup
 
     override fun onRomanizedChanged(language: String?) = ime.onRomanizedLanguageChanged(language)
+
+    override fun emojiAllowed(): Boolean = isCheckableField()
+
+    override fun insertEmoji(emoji: String) = ime.insertEmojiFromGemType(emoji)
 }

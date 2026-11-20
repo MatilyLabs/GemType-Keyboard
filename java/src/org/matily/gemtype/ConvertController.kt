@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import org.matily.gemtype.core.Action
 import org.matily.gemtype.core.Correction
 import org.matily.gemtype.core.Corrections
+import org.matily.gemtype.core.EmojiSuggester
 import org.matily.gemtype.core.GeminiException
 import org.matily.gemtype.core.Romanized
 
@@ -29,7 +30,10 @@ import org.matily.gemtype.core.Romanized
  * moves pause. Owns a scope that is cancelled when input finishes, so no request outlives its field.
  *
  * The bar also carries the "top fix" chip from "check as you type" ([FixSource]) when no conversion
- * pill is showing; tapping it applies that one correction, with the same Undo pill.
+ * pill is showing; tapping it applies that one correction, with the same Undo pill. And it offers an
+ * emoji for the words just typed ([EmojiSuggester]: "haha" → 😂); tapping it adds the emoji after the word.
+ *
+ * With the pill switched off, detection still runs: the suggestions follow the language the text looks like.
  */
 class ConvertController(
     private val bar: ConvertPillBar,
@@ -59,6 +63,12 @@ class ConvertController(
 
         /** [language] is what the text looks like now (null: nothing): the suggestions follow it. */
         fun onRomanizedChanged(language: String?) {}
+
+        /** The field takes ordinary text, where an emoji beside the words makes sense (not a URL, email or number). */
+        fun emojiAllowed(): Boolean = false
+
+        /** Put [emoji] after the word just typed, keeping the word as typed. */
+        fun insertEmoji(emoji: String) {}
     }
 
     /** Where the chip's correction comes from. */
@@ -87,12 +97,14 @@ class ConvertController(
     private var undo: Undo? = null
     private var message: String? = null
     private var chip: String? = null
+    private var emoji: String? = null
     private val evaluate = Runnable { evaluate() }
     private val undoExpired = Runnable { clearUndo() }
     private val messageExpired = Runnable { clearMessage() }
 
     init {
         bar.onPillClick = ::onPillClick
+        bar.onEmojiClick = ::onEmojiClick
     }
 
     // ---- lifecycle (called by the keyboard) -----------------------------------------------
@@ -155,12 +167,20 @@ class ConvertController(
 
     private fun evaluate() {
         matches = detect()
+        emoji = suggestEmoji()
         render()
+    }
+
+    private fun suggestEmoji(): String? {
+        if (undo != null || message != null || busy >= 0 || host.isPasswordField() || !host.emojiAllowed() ||
+            !ConvertPrefs.suggestEmoji(context)
+        ) return null
+        return EmojiSuggester.suggest(host.textBeforeCursor(EmojiSuggester.TAIL_CHARS))
     }
 
     private fun detect(): List<Romanized.Match> {
         if (!GemType.isEnabled || undo != null || message != null || busy >= 0 || host.isPasswordField() ||
-            !host.isLatinKeyboard() || !ConvertPrefs.showPill(context)
+            !host.isLatinKeyboard()
         ) return emptyList()
         val languages = ConvertPrefs.convertTo(context)
         if (languages.isEmpty()) return emptyList()
@@ -192,13 +212,14 @@ class ConvertController(
     private fun render() {
         message?.let { return bar.showMessage(it) }
         // A conversion pill is the better offer; the chip only fills an otherwise empty bar.
-        chip = if (undo == null && busy < 0 && matches.isEmpty() && GemType.isEnabled) fixes?.chipLabel() else null
+        val offered = if (ConvertPrefs.showPill(context)) matches else emptyList()
+        chip = if (undo == null && busy < 0 && offered.isEmpty() && GemType.isEnabled) fixes?.chipLabel() else null
         val labels = when {
             undo != null -> listOf(context.getString(R.string.gemtype_pill_undo))
-            else -> matches.map { context.getString(R.string.gemtype_pill_label, Romanized.nativeName(it.language)) } +
+            else -> offered.map { context.getString(R.string.gemtype_pill_label, Romanized.nativeName(it.language)) } +
                 listOfNotNull(chip)
         }
-        bar.show(labels, busy, if (chip != null) labels.lastIndex else -1, cover = undo != null)
+        bar.show(labels, busy, if (chip != null) labels.lastIndex else -1, cover = undo != null, emoji = emoji)
         host.onRomanizedChanged(romanizedLanguage)
     }
 
@@ -210,6 +231,7 @@ class ConvertController(
         undo = null
         message = null
         chip = null
+        emoji = null
         matches = emptyList()
         carried = null
         render()
@@ -224,10 +246,16 @@ class ConvertController(
             message != null -> clearMessage()
             undo != null -> undoConversion(undo)
             else -> {
-                val match = matches.getOrNull(index)
+                val match = matches.getOrNull(index)?.takeIf { ConvertPrefs.showPill(context) }
                 if (match != null) convert(index, match.language) else if (chip != null) applyTopFix()
             }
         }
+    }
+
+    private fun onEmojiClick(emoji: String) {
+        this.emoji = null
+        render()
+        host.insertEmoji(emoji)
     }
 
     /** The chip was tapped: apply that one correction in place. */

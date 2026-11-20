@@ -82,6 +82,8 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         public void launchCompanionSettings();
         public void onHardwareKeyboardToggleClicked();
         public void onGemTypeClicked();
+        /** The toolbox's switch for the convert pill ("→ বাংলা") was tapped. */
+        public void onConvertPillToggleClicked();
     }
 
     static final boolean DBG = DebugFlags.DEBUG_ENABLED;
@@ -126,6 +128,7 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
     private String mCompanionLangCode = "";
     private boolean mCompanionEnabled;
     private final ImageButton mToolboxHwToggleKey;
+    private final TextView mToolboxPillKey;
     private final View mToolboxHwSpacer;
     private final View mClipboardChipPill;
     private final View mClipboardChipOpenHistory;
@@ -322,6 +325,9 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         mToolboxHwToggleKey = (ImageButton)findViewById(R.id.toolbox_hw_toggle_key);
         mToolboxHwToggleKey.setOnClickListener(this);
         mToolboxHwToggleKey.setBackground(createToolboxButtonBackground(context));
+        mToolboxPillKey = findViewById(R.id.toolbox_pill_key);
+        mToolboxPillKey.setOnClickListener(this);
+        mToolboxPillKey.setBackground(createToolboxButtonBackground(context));
         mStripVisibilityGroup = new StripVisibilityGroup(this, mSuggestionsStrip,
                 mImportantNoticeStrip, mClipboardChipStrip, mInlineSuggestionsStrip,
                 mToolboxStrip);
@@ -477,6 +483,27 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         mToolboxCompanionSpacer.setVisibility(visibility);
         mCompanionKeyDrawable.setState(mCompanionLangCode,
                 mCompanionEnabled && !mCompanionLangCode.isEmpty());
+    }
+
+    /**
+     * The toolbox's convert-pill switch: shown when there is a language to convert to, labelled with
+     * its first letter ("→অ"), struck through while the pill is off.
+     */
+    public void setConvertPillKeyState(final boolean visible, final String language, final boolean on) {
+        mToolboxPillKey.setVisibility(visible ? VISIBLE : GONE);
+        if (!visible) {
+            return;
+        }
+        final String name = org.matily.gemtype.core.Romanized.INSTANCE.nativeName(language);
+        final String letter = name.isEmpty() ? "" : name.substring(0, name.offsetByCodePoints(0, 1));
+        final android.text.SpannableString label = new android.text.SpannableString("→" + letter);
+        if (!on) {
+            label.setSpan(new android.text.style.StrikethroughSpan(), 0, label.length(), 0);
+        }
+        mToolboxPillKey.setText(label);
+        mToolboxPillKey.setAlpha(on ? 1f : 0.55f);
+        mToolboxPillKey.setContentDescription(getContext().getString(
+                on ? R.string.gemtype_pill_switch_on : R.string.gemtype_pill_switch_off));
     }
 
     public void setHardwareToggleState(final boolean visible, final boolean expanded) {
@@ -1013,6 +1040,10 @@ public final class SuggestionStripView extends RelativeLayout implements OnClick
         }
         if (view == mToolboxHwToggleKey) {
             mListener.onHardwareKeyboardToggleClicked();
+            return;
+        }
+        if (view == mToolboxPillKey) {
+            mListener.onConvertPillToggleClicked();
             return;
         }
         if (view == mMoreSuggestionsKey) {

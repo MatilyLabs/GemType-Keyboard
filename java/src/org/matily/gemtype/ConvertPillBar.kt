@@ -21,7 +21,8 @@ import org.matily.gemtype.core.PillFit
  *
  * - **Offer** ("→ বাংলা", or the quieter outlined fix chip): at the trailing end, beside the word
  *   suggestions, which keep the rest of the strip. Only as many pills as leave each word slot
- *   [MIN_SLOT_DP] show ([PillFit]), and they never take more than half the strip.
+ *   [MIN_SLOT_DP] show ([PillFit]), and they never take more than half the strip. An emoji for the
+ *   words just typed comes first ([showEmoji]), so it sits right beside the words.
  * - **Cover** (a spinner while converting, "Undo", or a short error message, [showMessage]; a toast
  *   would be hidden from a keyboard whose app has notifications off): at the start, in place of the
  *   words for those few seconds.
@@ -37,6 +38,9 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
 
     /** Called with the index of the tapped pill. */
     var onPillClick: ((Int) -> Unit)? = null
+
+    /** Called with the tapped emoji. */
+    var onEmojiClick: ((String) -> Unit)? = null
 
     /** Hidden while true (the strip's toolbox is open, or the keyboard has no GemType key). */
     var suppressed = false
@@ -65,6 +69,7 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
     private var busy = -1
     private var chip = -1
     private var cover = false
+    private var emojiView: View? = null
 
     private val fill = GemTypeUi.themeColor(context, R.attr.md3Primary, ACCENT, R.attr.colorPrimary)
     private val text = GemTypeUi.themeColor(context, R.attr.md3OnPrimary, Color.WHITE, R.attr.colorOnPrimary)
@@ -83,14 +88,17 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
     /**
      * Offer one pill per label, best first; the pill at [chip] is the quieter outlined one (a suggested
      * fix, not an action on all the text). With [busy] set, that pill alone shows, with a spinner, in
-     * place of the words; with [cover] set (Undo), the pills also take the words' place.
+     * place of the words; with [cover] set (Undo), the pills also take the words' place. [emoji]
+     * (none while covering) comes before the pills.
      */
-    fun show(labels: List<String>, busy: Int = -1, chip: Int = -1, cover: Boolean = false) {
+    fun show(labels: List<String>, busy: Int = -1, chip: Int = -1, cover: Boolean = false, emoji: String? = null) {
         this.labels = labels
         this.busy = busy
         this.chip = chip
         this.cover = cover || busy >= 0
         removeAllViews()
+        emojiView = if (emoji != null && !this.cover) emojiChip(emoji) else null
+        emojiView?.let { addView(it, LayoutParams(LayoutParams.WRAP_CONTENT, GemTypeUi.dp(context, 30))) }
         labels.forEachIndexed { index, label ->
             if (busy >= 0 && index != busy) return@forEachIndexed
             addView(pill(index, label), LayoutParams(LayoutParams.WRAP_CONTENT, GemTypeUi.dp(context, 30)))
@@ -105,8 +113,25 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
         chip = -1
         cover = true
         removeAllViews()
+        emojiView = null
         addView(pill(MESSAGE, message), LayoutParams(LayoutParams.WRAP_CONTENT, GemTypeUi.dp(context, 36)))
         refresh()
+    }
+
+    /** The emoji offer: just the emoji, on a faint tint of the accent so it reads as tappable. */
+    private fun emojiChip(emoji: String) = TextView(context).apply {
+        text = emoji
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+        gravity = Gravity.CENTER
+        includeFontPadding = false
+        val inset = GemTypeUi.dp(context, 7)
+        setPadding(inset, 0, inset, 0)
+        minWidth = GemTypeUi.dp(context, 38)
+        background = GemTypeUi.roundRect(context, ColorUtils.setAlphaComponent(fill, 0x1F), 15f)
+        contentDescription = context.getString(R.string.gemtype_emoji_spoken, emoji)
+        isClickable = true
+        isFocusable = true
+        setOnClickListener { onEmojiClick?.invoke(emoji) }
     }
 
     private fun pill(index: Int, label: String) = LinearLayout(context).apply {
@@ -151,20 +176,25 @@ class ConvertPillBar @JvmOverloads constructor(context: Context, attrs: Attribut
     }
 
     private fun refresh() {
-        visibility = if (labels.isEmpty() || suppressed) GONE else VISIBLE
+        val emoji = emojiView
+        visibility = if (labels.isEmpty() && emoji == null || suppressed) GONE else VISIBLE
         val showing = visibility == VISIBLE
         val gap = GemTypeUi.dp(context, GAP_DP)
         var width = 0
         if (showing) {
-            val pills = (0 until childCount).map { getChildAt(it) }
-            pills.forEachIndexed { i, pill ->
+            (0 until childCount).forEach { i ->
+                (getChildAt(i).layoutParams as LayoutParams).marginStart = if (i == 0) 0 else gap
+            }
+            val pills = (0 until childCount).map { getChildAt(it) }.filter { it !== emoji }
+            pills.forEach { pill ->
                 pill.visibility = VISIBLE
-                (pill.layoutParams as LayoutParams).marginStart = if (i == 0) 0 else gap
                 pill.label().maxWidth = pill.label().tag as Int
             }
-            if (!cover && availableWidth > 0) {
+            if (!cover && availableWidth > 0 && pills.isNotEmpty()) {
                 val natural = pills.map { it.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED); it.measuredWidth }
-                val fit = PillFit.layout(availableWidth, natural, GemTypeUi.dp(context, MIN_SLOT_DP), gap)
+                // The emoji keeps its place; the pills fit in what is left.
+                val room = availableWidth - (emoji?.let { it.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED); it.measuredWidth + gap } ?: 0)
+                val fit = PillFit.layout(room, natural, GemTypeUi.dp(context, MIN_SLOT_DP), gap)
                 pills.forEachIndexed { i, pill -> pill.visibility = if (i < fit.pills) VISIBLE else GONE }
                 // A single pill wider than half the strip keeps its arrow and cuts its name short.
                 val shown = pills.take(fit.pills)

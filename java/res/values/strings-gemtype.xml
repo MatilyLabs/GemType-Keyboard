@@ -96,6 +96,17 @@
     <string name="gemtype_live_check_summary">Check your text for mistakes after you pause and show how many were found on the GemType key. Sends your text to Gemini while you type.</string>
     <string name="gemtype_show_convert_pill">Show conversion pill</string>
     <string name="gemtype_show_convert_pill_summary">Offer to turn text typed in English letters into your language</string>
+    <string name="gemtype_suggest_emoji">Suggest emoji</string>
+    <string name="gemtype_suggest_emoji_summary">Offer an emoji beside the words you type (haha → 😂). Tapping it adds the emoji after the word.</string>
+    <string name="gemtype_learn">Learn from my typing</string>
+    <string name="gemtype_learn_summary">Words you use often come first, and words you pick in your language come first next time. Stays on this phone; nothing is learned in password fields.</string>
+    <string name="gemtype_learn_clear">Words GemType learned</string>
+    <string name="gemtype_learn_clear_summary">See or delete what was learned</string>
+    <!-- Spoken for the emoji offered in the suggestion strip. -->
+    <string name="gemtype_emoji_spoken">Add %1$s</string>
+    <!-- Spoken for the toolbox switch of the conversion pill. -->
+    <string name="gemtype_pill_switch_on">Conversion pill on. Double-tap to turn off</string>
+    <string name="gemtype_pill_switch_off">Conversion pill off. Double-tap to turn on</string>
 
     <string name="gemtype_convert_to">Convert to</string>
     <string name="gemtype_convert_to_none">None</string>

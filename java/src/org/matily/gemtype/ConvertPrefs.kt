@@ -7,7 +7,7 @@ import androidx.core.content.edit
 import com.android.inputmethod.compat.PreferenceManagerCompat
 import org.matily.gemtype.core.Romanized
 
-/** Settings for the "type in English letters, convert to your language" feature (the keyboard's ordinary prefs: nothing secret). */
+/** Settings for the strip's pills: "type in English letters, convert to your language" and the emoji beside the words (the keyboard's ordinary prefs: nothing secret). */
 internal object ConvertPrefs {
     /** Preference key of the "Show conversion pill" switch (also in prefs_screen_gemtype.xml). */
     const val SHOW_PILL = "gemtype_show_convert_pill"
@@ -16,7 +16,16 @@ internal object ConvertPrefs {
 
     private fun prefs(context: Context) = PreferenceManagerCompat.getDeviceSharedPreferences(context)
 
+    /** Preference key of the "Suggest emoji" switch (prefs_screen_gemtype.xml and prefs_screen_emoji.xml). */
+    const val SUGGEST_EMOJI = "gemtype_suggest_emoji"
+
     fun showPill(context: Context): Boolean = prefs(context).getBoolean(SHOW_PILL, true)
+
+    /** The toolbox's pill switch. */
+    fun toggleShowPill(context: Context) = prefs(context).edit { putBoolean(SHOW_PILL, !showPill(context)) }
+
+    /** Offer an emoji beside the words just typed ("haha" → 😂). */
+    fun suggestEmoji(context: Context): Boolean = prefs(context).getBoolean(SUGGEST_EMOJI, true)
 
     /** The languages to convert to: the user's choice, or until they choose, the enabled non-Latin keyboard languages (see [Romanized.targets]). */
     fun convertTo(context: Context): List<String> =

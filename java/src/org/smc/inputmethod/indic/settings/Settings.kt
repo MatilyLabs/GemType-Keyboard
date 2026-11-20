@@ -288,7 +288,7 @@ class Settings private constructor() : SharedPreferences.OnSharedPreferenceChang
 
         @JvmStatic
         fun readShowsEmojiSwitchKey(prefs: SharedPreferences): Boolean =
-            prefs.getBoolean(PREF_SHOW_EMOJI_SWITCH_KEY, false)
+            prefs.getBoolean(PREF_SHOW_EMOJI_SWITCH_KEY, true)
 
         @JvmStatic
         fun readShowsNumberRow(prefs: SharedPreferences): Boolean =

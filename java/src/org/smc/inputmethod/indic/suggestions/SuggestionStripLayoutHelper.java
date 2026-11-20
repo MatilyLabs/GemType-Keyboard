@@ -210,6 +210,11 @@ final class SuggestionStripLayoutHelper {
                 && shouldOmitTypedWord(suggestedWords.mInputStyle,
                         settingsValues.mGestureFloatingPreviewTextEnabled,
                         settingsValues.mShouldShowLxxSuggestionUi);
+        // The typed word alone (no suggestion yet) sits in the centre, not on the left of an empty one.
+        if (typedWordDemandsDisplay && suggestedWords.size() == 1) {
+            return indexInSuggestedWords == SuggestedWords.INDEX_OF_TYPED_WORD
+                    ? mCenterPositionInStrip : -1;
+        }
         return getPositionInSuggestionStrip(indexInSuggestedWords,
                 suggestedWords.mWillAutoCorrect || typedWordDemandsDisplay,
                 settingsValues.mShouldShowLxxSuggestionUi && shouldOmitTypedWord,

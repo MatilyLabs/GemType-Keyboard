@@ -796,6 +796,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                 if (mSuggestionStripView != null) {
                     mSuggestionStripView.setCompanionKeyState(false, "", false);
                 }
+                pushConvertPillKeyState();
                 Log.d("GemType", "-------------transliteration enabled-----------");
                 return true;
             } catch (Exception e) {
@@ -829,6 +830,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         if (mSuggestionStripView != null) {
             mSuggestionStripView.setCompanionKeyState(englishLayout, lang, enabled);
         }
+        pushConvertPillKeyState();
     }
 
     // Has to be package-visible for unit tests
@@ -2559,6 +2561,37 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         final SharedPreferences prefs = PreferenceManagerCompat.getDeviceSharedPreferences(this);
         Settings.writeCompanionEnabled(prefs, !Settings.readCompanionEnabled(prefs));
         updateCompanionVarnam(mRichImm.getCurrentSubtypeLocale());
+    }
+
+    /** The strip's emoji chip was tapped: put {@code emoji} after the word just typed. */
+    public void insertEmojiFromGemType(final String emoji) {
+        mInputLogic.insertEmojiBesideWord(mSettings.getCurrent(), emoji, mHandler);
+        mKeyboardSwitcher.requestUpdatingShiftState(getCurrentAutoCapsState(),
+                getCurrentRecapitalizeState());
+    }
+
+    @Override
+    public void onConvertPillToggleClicked() {
+        org.matily.gemtype.ConvertPrefs.INSTANCE.toggleShowPill(this);
+        pushConvertPillKeyState();
+        if (mGemTypeConvert != null) {
+            mGemTypeConvert.onSubtypeChanged();
+        }
+    }
+
+    /** The toolbox's pill switch: on English keyboards, when there is a language to convert to. */
+    private void pushConvertPillKeyState() {
+        if (mSuggestionStripView == null) {
+            return;
+        }
+        final boolean english = "en".equals(mRichImm.getCurrentSubtypeLocale().getLanguage())
+                && !mRichImm.getCurrentSubtype().getRawSubtype()
+                        .containsExtraValueKey(TRANSLITERATION_METHOD);
+        final java.util.List<String> targets =
+                org.matily.gemtype.ConvertPrefs.INSTANCE.convertTo(this);
+        mSuggestionStripView.setConvertPillKeyState(english && !targets.isEmpty(),
+                targets.isEmpty() ? "" : targets.get(0),
+                org.matily.gemtype.ConvertPrefs.INSTANCE.showPill(this));
     }
 
     @Override

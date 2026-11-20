@@ -22,7 +22,13 @@
         android:key="pref_show_emoji_switch_key"
         android:title="@string/show_emoji_key"
         android:summary="@string/show_emoji_key_summary"
-        android:defaultValue="false"
+        android:defaultValue="true"
+        android:persistent="true" />
+    <CheckBoxPreference
+        android:key="gemtype_suggest_emoji"
+        android:title="@string/gemtype_suggest_emoji"
+        android:summary="@string/gemtype_suggest_emoji_summary"
+        android:defaultValue="true"
         android:persistent="true" />
     <ListPreference
         android:key="pref_emoji_skin_tone"

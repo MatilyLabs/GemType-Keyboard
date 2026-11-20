@@ -75,7 +75,6 @@ import org.smc.inputmethod.indic.varnam.VarnamIndicKeyboard;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.TreeSet;
@@ -150,7 +149,6 @@ public final class InputLogic {
     // Task ids share one global cancellation registry with the main engine; keep the ranges apart.
     private static final int COMPANION_TASK_ID_BASE = 64;
     private int companionVarnamTaskId = COMPANION_TASK_ID_BASE;
-    private static final int COMPANION_MAX_SUGGESTIONS = 1;
     private static final int COMPANION_MIN_WORD_LENGTH = 2;
     // Lookups for the convert pill's detection run on the companion engine too, with their own ids.
     private static final int LOOKUP_TASK_ID_BASE = 128;
@@ -357,6 +355,29 @@ public final class InputLogic {
         mConnection.commitText(text, 1);
         mConnection.endBatchEdit();
         mSpaceState = SpaceState.NONE;
+        mWordBeingCorrectedByCursor = null;
+        handler.postUpdateSuggestionStrip(SuggestedWords.INPUT_STYLE_TYPING);
+    }
+
+    /**
+     * An emoji the strip suggested for the words before the cursor was tapped: the word being typed
+     * is kept as typed (never corrected) and the emoji goes after it, with a space between. The next
+     * letter gets its own space; punctuation does not.
+     */
+    public void insertEmojiBesideWord(final SettingsValues settingsValues, final String emoji,
+            final LatinIME.UIHandler handler) {
+        mConnection.beginBatchEdit();
+        if (mWordComposer.isComposingWord()) {
+            commitTyped(settingsValues, LastComposedWord.NOT_A_SEPARATOR);
+        } else {
+            resetComposingState(true /* alsoResetLastComposedWord */);
+        }
+        final CharSequence before = mConnection.getTextBeforeCursor(1, 0);
+        final boolean spaceFirst = before != null && before.length() > 0
+                && !Character.isWhitespace(before.charAt(before.length() - 1));
+        mConnection.commitText(spaceFirst ? " " + emoji : emoji, 1);
+        mConnection.endBatchEdit();
+        mSpaceState = SpaceState.PHANTOM;
         mWordBeingCorrectedByCursor = null;
         handler.postUpdateSuggestionStrip(SuggestedWords.INPUT_STYLE_TYPING);
     }
@@ -1577,9 +1598,13 @@ public final class InputLogic {
             varnam.learn(suggestion);
         }
         // A word in another script (a Bangla word picked from the English strip) is not an
-        // English word: learning it would make it count as English from then on.
+        // English word: learning it would make it count as English from then on. The phonetic
+        // engine learns it instead, so it comes first the next time it is typed in English letters.
         if (!isVarnam && transliterationMethod == null && isLatinLocale(mDictionaryFacilitator.getLocale())
                 && hasNonLatinLetter(suggestion)) {
+            if (companionVarnamReady && companionVarnam != null) {
+                companionVarnam.learn(suggestion);
+            }
             return;
         }
         if (mConnection.hasSlowInputConnection()) {
@@ -1709,8 +1734,9 @@ public final class InputLogic {
                     romanizedSuggestions(suggestedWords, new ArrayList<>()));
             maybeShowRomanizedTransliterations();
         } else if (suggestedWords != null) {
+            // English stays English: the language's own words join the strip only once the text
+            // looks romanized (above).
             mSuggestionStripViewAccessor.showSuggestionStrip(suggestedWords);
-            maybeShowCompanionTransliterations();
         } else {
             mSuggestionStripViewAccessor.setNeutralSuggestionStrip();
         }
@@ -2865,47 +2891,6 @@ public final class InputLogic {
         companionVarnam.transliterateAdvanced(companionVarnamTaskId, word, cb);
     }
 
-    // Fired after the dictionary suggestions are shown: transliterate the typed word and, when
-    // the engine knows it (exact/dictionary match — not a mere tokenizer guess), re-show the
-    // strip with the transliterations blended in after the auto-correction slot. When English
-    // has nothing worthwhile either, the input is most probably a companion-language word, so
-    // the engine's best guess is shown even without a full-input dictionary match.
-    private void maybeShowCompanionTransliterations() {
-        if (!companionVarnamReady || isVarnam || transliterationMethod != null) {
-            return;
-        }
-        final String typedWord = mWordComposer.getTypedWord();
-        if (typedWord.length() < COMPANION_MIN_WORD_LENGTH) {
-            return;
-        }
-        final String query = mWordComposer.wasAutoCapitalized()
-                ? typedWord.substring(0, 1).toLowerCase(Locale.ROOT) + typedWord.substring(1)
-                : typedWord;
-        final String lookupLanguage = companionVarnamLang;
-        getCompanionVarnamSuggestions(query, (input, result) -> {
-            if (result != null && lookupLanguage != null) {
-                mRomanizedLookup.record(lookupLanguage, query.toLowerCase(Locale.ROOT),
-                        bestExactWeight(result));
-            }
-            if (result == null || !mWordComposer.getTypedWord().equals(typedWord)) {
-                return;
-            }
-            ArrayList<SuggestedWordInfo> transliterations =
-                    highConfidenceCompanionSuggestions(result);
-            if (transliterations.isEmpty() && hasNoWorthwhileEnglishSuggestions(mSuggestedWords)) {
-                transliterations = bestGuessCompanionSuggestions(result);
-            }
-            if (transliterations.isEmpty()) {
-                return;
-            }
-            final SuggestedWords merged =
-                    withCompanionSuggestions(mSuggestedWords, typedWord, transliterations);
-            if (merged != null) {
-                mSuggestionStripViewAccessor.showSuggestionStrip(merged);
-            }
-        });
-    }
-
     /**
      * The convert pill's detection says the text looks like {@code language} typed in English
      * letters (null: it does not). The strip follows from the next keystroke.
@@ -2935,31 +2920,19 @@ public final class InputLogic {
     /**
      * The strip for a romanized word: the typed word on the left, then {@code natives} (the words in
      * their own script, best first) in the centre and on the right. Never autocorrects: a space keeps
-     * the typed word. The typed word is listed twice: the strip hides the first (index 0, "typed")
-     * and centres index 1, putting index 2 on its left and index 3 on its right.
+     * the typed word.
      */
     private SuggestedWords romanizedSuggestions(final SuggestedWords base,
             final ArrayList<SuggestedWordInfo> natives) {
         final String typedWord = mWordComposer.getTypedWord();
         final SuggestedWordInfo typed = new SuggestedWordInfo(typedWord, "" /* prevWordsContext */,
-                SuggestedWordInfo.MAX_SCORE, SuggestedWordInfo.KIND_TYPED,
-                Dictionary.DICTIONARY_USER_TYPED, SuggestedWordInfo.NOT_AN_INDEX,
-                SuggestedWordInfo.NOT_A_CONFIDENCE);
-        final SuggestedWordInfo keep = new SuggestedWordInfo(typedWord, "" /* prevWordsContext */,
-                SuggestedWordInfo.MAX_SCORE - 1, SuggestedWordInfo.KIND_COMPLETION,
+                SuggestedWordInfo.MAX_SCORE,
+                SuggestedWordInfo.KIND_TYPED | SuggestedWordInfo.KIND_FLAG_ALWAYS_SHOW_IN_STRIP,
                 Dictionary.DICTIONARY_USER_TYPED, SuggestedWordInfo.NOT_AN_INDEX,
                 SuggestedWordInfo.NOT_A_CONFIDENCE);
         final ArrayList<SuggestedWordInfo> list = new ArrayList<>();
         list.add(typed);
-        if (natives.isEmpty()) {
-            list.add(keep);
-        } else {
-            list.add(natives.get(0));
-            list.add(keep);
-            for (int i = 1; i < natives.size(); i++) {
-                list.add(natives.get(i));
-            }
-        }
+        list.addAll(natives);
         return new SuggestedWords(list, base == null ? null : base.mRawSuggestions, typed,
                 false /* typedWordValid */, false /* willAutoCorrect */,
                 false /* isObsoleteSuggestions */, SuggestedWords.INPUT_STYLE_TYPING,
@@ -3076,35 +3049,6 @@ public final class InputLogic {
         return null;
     }
 
-    private static boolean hasNoWorthwhileEnglishSuggestions(final SuggestedWords base) {
-        return base != null && !base.isEmpty() && !base.mTypedWordValid && !base.mWillAutoCorrect;
-    }
-
-    private static ArrayList<SuggestedWordInfo> bestGuessCompanionSuggestions(
-            final TransliterationResult result) {
-        final ArrayList<SuggestedWordInfo> infos = new ArrayList<>();
-        final Suggestion[][] sources = {
-                result.DictionarySuggestions, result.GreedyTokenized, result.TokenizerSuggestions,
-        };
-        for (final Suggestion[] source : sources) {
-            if (source == null) {
-                continue;
-            }
-            for (final Suggestion sug : source) {
-                if (sug.Word == null || sug.Word.isEmpty() || containsLatinLetter(sug.Word)) {
-                    continue;
-                }
-                infos.add(new SuggestedWordInfo(sug.Word, "" /* prevWordsContext */, sug.Weight,
-                        SuggestedWordInfo.KIND_COMPLETION, Dictionary.DICTIONARY_RESUMED,
-                        SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE));
-                if (infos.size() >= COMPANION_MAX_SUGGESTIONS) {
-                    return infos;
-                }
-            }
-        }
-        return infos;
-    }
-
     private static boolean isLatinLocale(@Nullable final Locale locale) {
         return locale != null && !org.matily.gemtype.core.Romanized.INSTANCE.getNON_LATIN()
                 .contains(locale.getLanguage());
@@ -3131,69 +3075,6 @@ public final class InputLogic {
             }
         }
         return false;
-    }
-
-    private static ArrayList<SuggestedWordInfo> highConfidenceCompanionSuggestions(
-            final TransliterationResult result) {
-        final ArrayList<Suggestion> dictionaryBacked = new ArrayList<>();
-        if (result.ExactWords != null) {
-            Collections.addAll(dictionaryBacked, result.ExactWords);
-        }
-        if (result.PatternDictionarySuggestions != null) {
-            Collections.addAll(dictionaryBacked, result.PatternDictionarySuggestions);
-        }
-        final ArrayList<SuggestedWordInfo> infos = new ArrayList<>();
-        final HashSet<String> seen = new HashSet<>();
-        for (final Suggestion sug : dictionaryBacked) {
-            if (sug.Word == null || sug.Word.isEmpty() || !seen.add(sug.Word)) {
-                continue;
-            }
-            infos.add(new SuggestedWordInfo(sug.Word, "" /* prevWordsContext */, sug.Weight,
-                    SuggestedWordInfo.KIND_COMPLETION, Dictionary.DICTIONARY_RESUMED,
-                    SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE));
-            if (infos.size() >= COMPANION_MAX_SUGGESTIONS) {
-                break;
-            }
-        }
-        return infos;
-    }
-
-    @Nullable
-    private static SuggestedWords withCompanionSuggestions(final SuggestedWords base,
-            final String typedWord, final ArrayList<SuggestedWordInfo> transliterations) {
-        // Only blend onto a strip that is still showing suggestions for the same typed word.
-        if (base == null || base.isEmpty() || base.mTypedWordInfo == null
-                || !typedWord.equals(base.mTypedWordInfo.mWord)) {
-            return null;
-        }
-        final ArrayList<SuggestedWordInfo> list = new ArrayList<>();
-        final HashSet<String> injected = new HashSet<>();
-        for (final SuggestedWordInfo info : transliterations) {
-            injected.add(info.mWord);
-        }
-        for (int i = 0; i < base.size(); i++) {
-            final SuggestedWordInfo info = base.getInfo(i);
-            if (!injected.contains(info.mWord)) {
-                list.add(info);
-            }
-        }
-        // Index 2 renders off-center in both strip styles (the typing style hides index 0 and
-        // centers index 1), keeping English front and center. On a sparser strip that would
-        // put the transliteration in the center slot — acceptable only when English produced
-        // nothing worth defending.
-        if (list.size() < 2 && !hasNoWorthwhileEnglishSuggestions(base)) {
-            return null;
-        }
-        list.addAll(Math.min(2, list.size()), transliterations);
-        return new SuggestedWords(
-                list,
-                base.mRawSuggestions,
-                base.mTypedWordInfo,
-                base.mTypedWordValid,
-                base.mWillAutoCorrect,
-                base.mIsObsoleteSuggestions,
-                base.mInputStyle,
-                base.mSequenceNumber);
     }
 
     public boolean isVarnamActive() {
