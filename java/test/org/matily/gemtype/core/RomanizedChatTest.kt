@@ -41,6 +41,12 @@ class RomanizedChatTest {
         else PhoneticStanding.of(language, phonetic["$language|$word"])
     }
 
+    // GemType's own phonetic dictionaries (bn, hi; ur through hi), as on iOS.
+    private val engines = org.matily.gemtype.core.phonetic.PhoneticEngines(
+        org.matily.gemtype.core.phonetic.PhoneticData.Folder(File("assets/gemtype/phonetic")),
+    )
+    private val ownRecognizer = Romanized.Recognizer { language, word -> PhoneticStanding.own(engines, language, word) }
+
     private class Tally(var total: Int = 0, var early: Int = 0, var full: Int = 0)
 
     private fun firstWords(text: String, count: Int) = text.split(' ').take(count).joinToString(" ")
@@ -94,7 +100,14 @@ class RomanizedChatTest {
         assertAtLeast(run("lists + English dictionary + Varnam (bn, hi)", recognizer), PHONETIC_FLOORS)
     }
 
+    @Test fun ownPhoneticDictionariesFindChatSpellingsAndStillNeverEnglish() {
+        assertAtLeast(run("lists + English dictionary + GemType phonetic (bn, hi, ur)", ownRecognizer), OWN_FLOORS)
+    }
+
     private companion object {
+        /** With GemType's own Bangla and Hindi dictionaries (iOS 1.0.1: bn 96/98, hi 93/98). */
+        val OWN_FLOORS = mapOf("bn" to (88 to 96), "hi" to (88 to 96))
+
         /** With the Bangla and Hindi phonetic dictionaries (the companion engine on the device). */
         val PHONETIC_FLOORS = mapOf("bn" to (88 to 95), "hi" to (87 to 95))
 

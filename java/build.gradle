@@ -173,7 +173,7 @@ android {
         }
     }
     androidResources {
-        noCompress '.dict'
+        noCompress '.dict', '.bin'
     }
     lint {
         checkReleaseBuilds = false

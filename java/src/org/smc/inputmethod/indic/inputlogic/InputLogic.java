@@ -32,6 +32,7 @@ import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Toast;
 
+import com.android.inputmethod.compat.PreferenceManagerCompat;
 import com.android.inputmethod.compat.SuggestionSpanUtils;
 import com.android.inputmethod.event.Event;
 import com.android.inputmethod.event.InputTransaction;
@@ -64,6 +65,7 @@ import com.varnamproject.govarnam.TransliterationResult;
 
 import org.smc.ime.InputMethod;
 import org.smc.inputmethod.indic.LatinIME;
+import org.smc.inputmethod.indic.settings.Settings;
 import org.smc.inputmethod.indic.settings.SettingsValues;
 import org.smc.inputmethod.indic.settings.SettingsValuesForSuggestion;
 import org.smc.inputmethod.indic.settings.SpacingAndPunctuations;
@@ -1605,6 +1607,9 @@ public final class InputLogic {
             if (companionVarnamReady && companionVarnam != null) {
                 companionVarnam.learn(suggestion);
             }
+            if (romanizedLanguage != null && romanizedShownWord != null) {
+                picks().record(romanizedLanguage, romanizedShownWord, suggestion);
+            }
             return;
         }
         if (mConnection.hasSlowInputConnection()) {
@@ -2908,13 +2913,53 @@ public final class InputLogic {
         return romanizedLanguage;
     }
 
-    /** The word being typed is romanized text on the English keyboard (see {@link #setRomanizedLanguage}). */
+    /**
+     * The word being typed is romanized text on the English keyboard (see {@link #setRomanizedLanguage})
+     * and the user wants the language's words in the strip (the toolbox's language key).
+     */
     private boolean isRomanizedWord() {
         if (romanizedLanguage == null || isVarnam || transliterationMethod != null
                 || !mWordComposer.isComposingWord()) {
             return false;
         }
-        return isAsciiLetters(mWordComposer.getTypedWord());
+        return isAsciiLetters(mWordComposer.getTypedWord()) && Settings.readCompanionEnabled(
+                PreferenceManagerCompat.getDeviceSharedPreferences(mLatinIME));
+    }
+
+    /** The romanized word whose native words the strip shows now, for {@link #mPicks}. */
+    @Nullable private String romanizedShownWord;
+
+    /** The native words the user picked for romanized spellings (they come first the next time). */
+    private org.matily.gemtype.GemTypePhonetic.Picks mPicks;
+
+    private org.matily.gemtype.GemTypePhonetic.Picks picks() {
+        if (mPicks == null) {
+            mPicks = new org.matily.gemtype.GemTypePhonetic.Picks(
+                    PreferenceManagerCompat.getDeviceSharedPreferences(mLatinIME));
+        }
+        return mPicks;
+    }
+
+    /** {@code words} as strip entries, the word picked before for {@code roman} first. */
+    private ArrayList<SuggestedWordInfo> nativeInfos(final String language, final String roman,
+            final java.util.List<String> words) {
+        final ArrayList<String> ordered = new ArrayList<>(words);
+        final String picked = picks().pick(language, roman);
+        if (picked != null) {
+            ordered.remove(picked);
+            ordered.add(0, picked);
+        }
+        final ArrayList<SuggestedWordInfo> infos = new ArrayList<>();
+        for (int i = 0; i < ordered.size() && infos.size() < ROMANIZED_MAX_SUGGESTIONS; i++) {
+            final String w = ordered.get(i);
+            if (w == null || w.isEmpty() || containsLatinLetter(w)) {
+                continue;
+            }
+            infos.add(new SuggestedWordInfo(w, "" /* prevWordsContext */, ROMANIZED_MAX_SUGGESTIONS - i,
+                    SuggestedWordInfo.KIND_COMPLETION, Dictionary.DICTIONARY_RESUMED,
+                    SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE));
+        }
+        return infos;
     }
 
     /**
@@ -2952,6 +2997,21 @@ public final class InputLogic {
         }
         final String query = typedWord.toLowerCase(Locale.ROOT);
         final int generation = romanizedGeneration;
+        // Bangla and Hindi: GemType's own dictionaries (as on iOS), which know chat spellings.
+        if (org.matily.gemtype.GemTypePhonetic.hasEngine(language)) {
+            org.matily.gemtype.GemTypePhonetic.suggest(mLatinIME, language, query,
+                    ROMANIZED_MAX_SUGGESTIONS + 1, words -> {
+                if (generation != romanizedGeneration
+                        || !mWordComposer.getTypedWord().equals(typedWord)) {
+                    return;
+                }
+                final ArrayList<SuggestedWordInfo> natives = nativeInfos(language, query, words);
+                romanizedShownWord = query;
+                mSuggestionStripViewAccessor.showSuggestionStrip(
+                        romanizedSuggestions(mSuggestedWords, natives));
+            });
+            return;
+        }
         if (companionVarnamReady && language.equals(companionVarnamLang)) {
             getCompanionVarnamSuggestions(query, (input, result) -> {
                 if (result == null || generation != romanizedGeneration

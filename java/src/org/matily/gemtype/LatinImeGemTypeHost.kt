@@ -59,7 +59,7 @@ class LatinImeGemTypeHost(private val ime: LatinIME) : LiveCheckController.Host 
 
     override fun onReplaced(field: FieldText, result: CharSequence) = ime.offerGemTypeUndo(field, result)
 
-    override fun recognizer(): Romanized.Recognizer = ime.romanizedLookup
+    override fun recognizer(): Romanized.Recognizer = ime.romanizedRecognizer
 
     override fun onRomanizedChanged(language: String?) = ime.onRomanizedLanguageChanged(language)
 

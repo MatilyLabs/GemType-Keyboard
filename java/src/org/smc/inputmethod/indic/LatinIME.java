@@ -822,7 +822,10 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         final String romanized = mInputLogic.getRomanizedLanguage();
         final String engineLang = romanized != null
                 && org.smc.inputmethod.indic.varnam.VarnamIndicKeyboard.schemes.containsKey("varnam-" + romanized) ? romanized : lang;
-        if (!engineLang.isEmpty() && enabled && englishLayout) {
+        // Bangla, Hindi and Urdu have GemType's own dictionaries (bundled): no Varnam engine for them.
+        final boolean ownEngine = org.matily.gemtype.core.PhoneticStanding.INSTANCE.getOWN_LANGUAGES()
+                .contains(engineLang);
+        if (!engineLang.isEmpty() && enabled && englishLayout && !ownEngine) {
             mInputLogic.enableCompanionVarnam(engineLang, getApplicationContext());
         } else {
             mInputLogic.disableCompanionVarnam(getApplicationContext());
@@ -1058,6 +1061,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         if (mGemTypeConvert != null) {
             final ConvertController convert = mGemTypeConvert;
             mInputLogic.mRomanizedLookup.setOnLearned(convert::onDictionaryAnswer);
+            ownPhonetic().setOnLearned(convert::onDictionaryAnswer);
         }
         mEmojiSearchBar = view.findViewById(R.id.emoji_search_bar);
         mEmojiSuggestionStrip = view.findViewById(R.id.emoji_suggestion_strip);
@@ -2503,6 +2507,22 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
      * and must not start to look like English.
      */
     /** What the phonetic engine says about romanized words (the convert pill's detection). */
+    /** What a romanized word is: GemType's own dictionaries for Bangla, Hindi and Urdu, Varnam's for the others. */
+    private org.matily.gemtype.GemTypePhonetic.Lookup mOwnPhonetic;
+
+    private org.matily.gemtype.GemTypePhonetic.Lookup ownPhonetic() {
+        if (mOwnPhonetic == null) {
+            mOwnPhonetic = new org.matily.gemtype.GemTypePhonetic.Lookup(this);
+        }
+        return mOwnPhonetic;
+    }
+
+    public org.matily.gemtype.core.Romanized.Recognizer getRomanizedRecognizer() {
+        final org.matily.gemtype.GemTypePhonetic.Lookup own = ownPhonetic();
+        return (language, word) -> own.handles(language) ? own.standing(language, word)
+                : mInputLogic.mRomanizedLookup.standing(language, word);
+    }
+
     public org.matily.gemtype.RomanizedLookup getRomanizedLookup() {
         return mInputLogic.mRomanizedLookup;
     }

@@ -1,0 +1,7 @@
+hindi-words.bin is built (tools/build_hindi_data.py) from the word list of Lekhani,
+https://github.com/udgamlabs/lekhani (files/words.bin.gz, 200,000 common Hindi words in 8
+frequency bands), which its authors (Udgam Labs LLP) dedicated to the public domain under
+CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/). Per Lekhani's NOTICE, the list
+is derived from word counts of IndicCorp v2 Hindi (AI4Bharat, CC0).
+
+Only the word list is used. Lekhani's model and runner (Apache-2.0) are not included.

@@ -102,6 +102,9 @@ class LearnedWordsFragment : Fragment() {
             .setPositiveButton(R.string.privacy_delete) { _, _ ->
                 PersonalizationHelper.removeAllUserHistoryDictionaries(requireContext())
                 VarnamIndicKeyboard.clearLearnings(requireContext())
+                org.matily.gemtype.GemTypePhonetic.Picks(
+                    com.android.inputmethod.compat.PreferenceManagerCompat.getDeviceSharedPreferences(requireContext()),
+                ).clear()
                 buildLanguageChips()
             }
             .setNegativeButton(android.R.string.cancel, null)
