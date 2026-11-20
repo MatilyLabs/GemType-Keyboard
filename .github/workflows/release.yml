@@ -2,8 +2,10 @@
 #
 #   1. tests, then a signed AAB (for Google Play) and signed APKs (for GitHub Releases)
 #   2. a GitHub release v1.2.3 with the APKs attached
-#   3. the AAB uploaded to Google Play's internal testing track, once the
-#      PLAY_SERVICE_ACCOUNT_JSON secret exists (Play's first upload must be done by hand)
+#   3. the AAB uploaded to Google Play, with the "What's new" text of
+#      fastlane/metadata/android/whatsnew, once the PLAY_SERVICE_ACCOUNT_JSON secret exists.
+#      The track is the one picked when run from the Actions tab; a pushed tag goes to the
+#      PLAY_TRACK variable's track, "internal" (internal testing) when it is not set.
 #
 # Secrets (Settings > Secrets and variables > Actions):
 #   GEMTYPE_KEYSTORE_BASE64    the upload keystore, base64-encoded
@@ -11,8 +13,8 @@
 #   GEMTYPE_KEY_ALIAS          the key's alias
 #   GEMTYPE_KEY_PASSWORD       the key's password
 #   PLAY_SERVICE_ACCOUNT_JSON  Google Play service account key (optional until after the first upload)
-# Variable (optional): PLAY_RELEASE_STATUS, "completed" by default; set it to "draft" while the app
-# has never been published, because Play only accepts draft releases for a draft app.
+# Variables (optional): PLAY_TRACK (see 3.); PLAY_RELEASE_STATUS, "completed" by default ("draft"
+# leaves the release for you to review and roll out in Play Console).
 #
 # versionCode = (major * 10000 + minor * 100 + patch) * 10, so 1.2.3 is 102030. The AAB uses it as is;
 # APK splits add 0 (armeabi-v7a) or 1 (arm64-v8a).
@@ -27,6 +29,11 @@ on:
       version:
         description: "Version to release, e.g. 1.0.0 (creates the tag v1.0.0)"
         required: true
+      track:
+        description: "Google Play track"
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
 
 permissions:
   contents: write
@@ -41,6 +48,7 @@ jobs:
     timeout-minutes: 45
     env:
       HAS_PLAY_KEY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+      PLAY_TRACK: ${{ inputs.track || vars.PLAY_TRACK || 'internal' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -117,7 +125,7 @@ jobs:
             --title "GemType $VERSION" \
             --notes-file fastlane/metadata/android/en-US/changelogs/default.txt
 
-      - name: Upload to Google Play (internal testing)
+      - name: Upload to Google Play (${{ env.PLAY_TRACK }})
         if: env.HAS_PLAY_KEY == 'true'
         uses: r0adkll/upload-google-play@v1.1.5
         with:
@@ -125,5 +133,10 @@ jobs:
           packageName: org.matily.gemtype
           releaseFiles: dist/GemType-${{ env.VERSION }}.aab
           mappingFile: dist/mapping-${{ env.VERSION }}.txt
-          track: internal
+          track: ${{ env.PLAY_TRACK }}
           status: ${{ vars.PLAY_RELEASE_STATUS || 'completed' }}
+          whatsNewDirectory: fastlane/metadata/android/whatsnew
+
+      - name: No Google Play upload
+        if: env.HAS_PLAY_KEY != 'true'
+        run: echo "::notice::PLAY_SERVICE_ACCOUNT_JSON is not set; upload dist/GemType-$VERSION.aab (in this run's artifacts) to Play Console by hand." 
