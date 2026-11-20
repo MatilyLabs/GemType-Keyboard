@@ -13,6 +13,7 @@ import org.matily.gemtype.core.PhoneticStanding
 import org.matily.gemtype.core.Romanized
 import org.matily.gemtype.core.phonetic.DataFile
 import org.matily.gemtype.core.phonetic.PhoneticData
+import org.matily.gemtype.core.phonetic.PhoneticComposing
 import org.matily.gemtype.core.phonetic.PhoneticEngines
 import java.io.FileInputStream
 import java.io.IOException
@@ -56,6 +57,43 @@ object GemTypePhonetic {
             val words = runCatching { engines(app).engine(language)?.suggestions(roman, limit) }.getOrNull().orEmpty()
             main.post { done.onWords(words) }
         }
+    }
+
+    /**
+     * The phonetic keyboard ("Bangla (Avro)", "Hindi (Transliteration)") as on iOS: the words the English
+     * letters of the word being typed may be, best first (see [PhoneticComposing]): the first is what the field
+     * shows and what space commits. [picked] is the user's earlier choice for these letters.
+     */
+    @JvmStatic
+    fun candidates(context: Context, language: String, buffer: String, picked: String?, done: Words) {
+        val app = context.applicationContext
+        executor.execute {
+            val words = runCatching {
+                engines(app).engine(language)?.let { engine ->
+                    PhoneticComposing.candidates(engine, buffer, engine.suggestions(buffer, PhoneticComposing.DICTIONARY_LIMIT), picked)
+                }
+            }.getOrNull().orEmpty()
+            main.post { done.onWords(words) }
+        }
+    }
+
+    /** What space commits for [buffer], now (a few milliseconds): the strip's lookup may not be in yet. */
+    @JvmStatic
+    fun bestNow(context: Context, language: String, buffer: String, picked: String?): String? = runCatching {
+        engines(context).engine(language)?.let { PhoneticComposing.best(it, buffer, picked) }
+    }.getOrNull()
+
+    /** The rule result for [buffer] (what the field shows until the dictionary answers). */
+    @JvmStatic
+    fun convert(context: Context, language: String, buffer: String): String? =
+        runCatching { engines(context).engine(language)?.convert(buffer) }.getOrNull()
+
+    /** The language whose phonetic engine types for this transliteration layout, or null. */
+    @JvmStatic
+    fun layoutLanguage(transliterationMethod: String?): String? = when (transliterationMethod) {
+        "bn-avro" -> "bn"
+        "hi-transliteration" -> "hi"
+        else -> null
     }
 
     /**

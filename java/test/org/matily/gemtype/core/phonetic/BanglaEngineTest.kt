@@ -273,6 +273,22 @@ class BanglaEngineTest {
         sug("oooooooooooooooooooooooooooo", 5) // stays bounded
     }
 
+    @Test fun theComposerCommitsTheBestWord() {
+        // What space commits on the Bangla (Avro) keyboard, as on iOS.
+        for ((roman, word) in listOf(
+            "khabo" to "খাবো", "kabo" to "খাবো", "jabo" to "যাবো", "jachi" to "যাচ্ছি", "pachi" to "পাচ্ছি",
+            "korbo" to "করবো", "ami" to "আমি", "bhalo" to "ভালো", "Tumi" to "তুমি",
+        )) assertEquals(roman, word.nfc(), PhoneticComposing.best(bn, roman, null).nfc())
+        // Spelled out with a capital or a mark: the rule result.
+        assertEquals("বলো".nfc(), PhoneticComposing.best(bn, "bolO", null).nfc())
+        assertEquals("টাকা".nfc(), PhoneticComposing.best(bn, "Taka", null).nfc())
+        // The user's earlier choice comes first.
+        assertEquals("ভালবাসি".nfc(), PhoneticComposing.best(bn, "valobashi", "ভালবাসি").nfc())
+        // The rule result stays in the list.
+        val list = PhoneticComposing.candidates(bn, "khabo", bn.suggestions("khabo", 10), null)
+        assertTrue(bn.convert("khabo").nfc() in list)
+    }
+
     @Test fun closestWordScoresCommonWords() {
         val ami = bn.closestWord("ami")
         assertNotNull(ami)

@@ -141,6 +141,16 @@ public final class InputLogic {
     private Varnam varnam;
     private int varnamTransliterationTaskID = 0; // For IDying parallel varnam suggestion fetch task
     private String varnamInlineWord; // Transliteration currently rendered in the composing region
+    private String varnamInlineFor; // The typed word varnamInlineWord was looked up for
+    /**
+     * The language GemType's own phonetic engine types for this layout ("Bangla (Avro)", "Hindi
+     * (Transliteration)"), as on iOS: the word is composed in English letters, the field shows its best
+     * word, space commits it. It answers through the Varnam path (isVarnam is true, varnam is null).
+     */
+    @Nullable private String phoneticLanguage;
+    /** The English letters whose words the strip shows now, and the engine's own first word for them. */
+    @Nullable private String phoneticBuffer;
+    @Nullable private String phoneticNatural;
 
     // Companion engine: blends high-confidence transliterations of the configured language into
     // the Latin suggestion strip while the user types on the plain English keyboard.
@@ -1066,7 +1076,14 @@ public final class InputLogic {
         // isComposingWord() may have changed since we stored wasComposing
         if (mWordComposer.isComposingWord()) {
             // Varnam requires auto correction
-            if ((settingsValues.mAutoCorrectionEnabledPerUserSettings && !isRomanizedWord())
+            if (phoneticLanguage != null && !mWordComposer.isBatchMode()) {
+                if (handler.hasPendingUpdateSuggestions()) {
+                    handler.cancelUpdateSuggestionStrip();
+                }
+                commitTyped(settingsValues, shouldAvoidSendingCode ? LastComposedWord.NOT_A_SEPARATOR
+                        : StringUtils.newSingleCodePointString(codePoint));
+                inputTransaction.setDidAutoCorrect();
+            } else if ((settingsValues.mAutoCorrectionEnabledPerUserSettings && !isRomanizedWord())
                     || isVarnam) {
                 final String separator = shouldAvoidSendingCode ? LastComposedWord.NOT_A_SEPARATOR
                         : StringUtils.newSingleCodePointString(codePoint);
@@ -1596,8 +1613,15 @@ public final class InputLogic {
 
         if (!settingsValues.mLearnFromTyping || settingsValues.mIncognitoModeEnabled) return;
 
-        if (isVarnam) {
+        if (isVarnam && varnam != null) {
             varnam.learn(suggestion);
+        }
+        // The phonetic keyboard: a word other than the engine's own first one for these letters was
+        // chosen; it comes first the next time.
+        if (phoneticLanguage != null && phoneticBuffer != null
+                && (!suggestion.equals(phoneticNatural)
+                        || picks().pick(phoneticLanguage, phoneticBuffer) != null)) {
+            picks().record(phoneticLanguage, phoneticBuffer, suggestion);
         }
         // A word in another script (a Bangla word picked from the English strip) is not an
         // English word: learning it would make it count as English from then on. The phonetic
@@ -1660,8 +1684,9 @@ public final class InputLogic {
                     // separator commits. Without it the first suggestion moves to index 0 and
                     // must be the typed-word info so setSuggestedWords still records it as
                     // the word to commit.
+                    // The phonetic keyboard always shows the letters as typed (as on iOS).
                     final boolean showLatinWord = settingsValues.mShowLatinWordSuggestion
-                            || suggestedWordsList.isEmpty();
+                            || suggestedWordsList.isEmpty() || phoneticLanguage != null;
                     if (showLatinWord) {
                         suggestedWordsList.add(0, typedWordInfo);
                     }
@@ -2349,6 +2374,10 @@ public final class InputLogic {
             // reasons (there are race conditions with commits) but some applications are
             // relying on this behavior so we continue to support it for older apps.
             sendDownUpKeyEvent(KeyEvent.KEYCODE_ENTER);
+        } else if (phoneticLanguage != null && !Character.isLetter(codePoint)) {
+            // The phonetic keyboard's full stop is the language's own (। in Bangla and Hindi), as on iOS.
+            mConnection.commitText(codePoint == '.' ? "\u0964"
+                    : StringUtils.newSingleCodePointString(codePoint), 1);
         } else if (transliteration && isIndic && !Character.isDigit(codePoint)) {
             mConnection.applyTransliteration(StringUtils.newSingleCodePointString(codePoint), 1);
         } else {
@@ -2438,6 +2467,17 @@ public final class InputLogic {
     public void commitTyped(final SettingsValues settingsValues, final String separatorString) {
         if (!mWordComposer.isComposingWord()) return;
         final String typedWord = mWordComposer.getTypedWord();
+        if (phoneticLanguage != null && typedWord.length() > 0 && !mWordComposer.isBatchMode()) {
+            // The phonetic keyboard commits the best word for the letters, found now: the strip's
+            // lookup may still be on its way after fast typing.
+            final String best = org.matily.gemtype.GemTypePhonetic.bestNow(mLatinIME, phoneticLanguage,
+                    typedWord, picks().pick(phoneticLanguage, typedWord));
+            if (best != null && !best.isEmpty()) {
+                commitChosenWord(settingsValues, best, LastComposedWord.COMMIT_TYPE_DECIDED_WORD,
+                        separatorString);
+                return;
+            }
+        }
         if (typedWord.length() > 0) {
             final boolean isBatchMode = mWordComposer.isBatchMode();
             commitChosenWord(settingsValues, typedWord,
@@ -2733,7 +2773,21 @@ public final class InputLogic {
     public void enableTransliteration(String transliterationName, Context context) {
         InputMethod im;
         this.transliterationMethod = null;
+        phoneticLanguage = null;
         try {
+            final String phonetic = org.matily.gemtype.GemTypePhonetic.layoutLanguage(transliterationName);
+            if (phonetic != null) {
+                // The word is composed in English letters (no rules in the composer); the engine does the rest.
+                phoneticLanguage = phonetic;
+                varnam = null;
+                isVarnam = true;
+                im = new InputMethod(transliterationName, transliterationName, "", "", "1", 1, 3,
+                        new ArrayList<InputMethod.InputPattern>());
+                mWordComposer.setTransliterationMethod(im);
+                mConnection.setTransliterationMethod(im);
+                isTransliteration = true;
+                return;
+            }
             if (transliterationName.startsWith("varnam-")) {
                 String schemeID = transliterationName.substring(7);
                 Log.d("varnam", "init varnam input method - " + schemeID);
@@ -2769,7 +2823,8 @@ public final class InputLogic {
         isTransliteration = false;
         transliterationMethod = null;
 
-        if (isVarnam) {
+        phoneticLanguage = null;
+        if (isVarnam && varnam != null) {
             varnam.close(context);
             isVarnam = false;
             varnam = null;
@@ -2834,6 +2889,31 @@ public final class InputLogic {
     }
 
     public void getVarnamSuggestions(String word, VarnamCallback cb) {
+        final String language = phoneticLanguage;
+        if (language != null) {
+            final String picked = picks().pick(language, word);
+            org.matily.gemtype.GemTypePhonetic.candidates(mLatinIME, language, word, picked, words -> {
+                if (!language.equals(phoneticLanguage)) {
+                    return;
+                }
+                final Suggestion[] sugs = new Suggestion[words.size()];
+                for (int i = 0; i < sugs.length; i++) {
+                    sugs[i] = new Suggestion(words.get(i), sugs.length - i);
+                }
+                if (word.equals(mWordComposer.getTypedWord())) {
+                    phoneticBuffer = word;
+                    phoneticNatural = null;
+                    for (final String w : words) {
+                        if (!w.equals(picked)) {
+                            phoneticNatural = w;
+                            break;
+                        }
+                    }
+                }
+                cb.onResult(word, sugs);
+            });
+            return;
+        }
         varnam.cancel(varnamTransliterationTaskID);
         if (++varnamTransliterationTaskID >= 64) {
             // Restart ID from 0
@@ -3138,7 +3218,7 @@ public final class InputLogic {
     }
 
     public boolean isVarnamActive() {
-        return isVarnam && varnam != null;
+        return isVarnam && (varnam != null || phoneticLanguage != null);
     }
 
     public boolean shouldTransliterateGestureResults() {
@@ -3243,6 +3323,16 @@ public final class InputLogic {
     }
 
     private CharSequence composingTextToRender() {
+        if (phoneticLanguage != null) {
+            // The best word once the dictionary answered for these letters, the rule result until then.
+            final String typed = mWordComposer.getTypedWord();
+            if (varnamInlineWord != null && typed.equals(varnamInlineFor)) {
+                return varnamInlineWord;
+            }
+            final String converted = org.matily.gemtype.GemTypePhonetic.convert(mLatinIME,
+                    phoneticLanguage, typed);
+            return getTextWithUnderline(converted == null || converted.isEmpty() ? typed : converted);
+        }
         if (isVarnam && varnamInlineWord != null) {
             return varnamInlineWord;
         }
@@ -3259,6 +3349,7 @@ public final class InputLogic {
             return;
         }
         varnamInlineWord = inline;
+        varnamInlineFor = latinWord;
         setComposingTextInternal(inline, 1);
     }
 
